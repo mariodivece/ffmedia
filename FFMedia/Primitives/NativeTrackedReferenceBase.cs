@@ -24,6 +24,19 @@ public abstract unsafe class NativeTrackedReferenceBase<T> : NativeReferenceBase
         ObjectId = NativeReferenceTracker.Instance.Add(this, source);
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NativeTrackedReferenceBase{T}"/> class.
+    /// Automatically assigns a <see cref="ObjectId"/>.
+    /// </summary>
+    /// <param name="target"></param>
+    /// <param name="filePath">Use sttribute [CallerFilePath] in derived class to track the source.</param>
+    /// <param name="lineNumber">Use attribute [CallerLineNumber] in dervice classes to track the source.</param>
+    protected NativeTrackedReferenceBase(T* target, string? filePath, int? lineNumber)
+        : this(filePath, lineNumber)
+    {
+        Update(target);
+    }
+
     /// <inheritdoc />
     public ulong ObjectId { get; protected set; }
 

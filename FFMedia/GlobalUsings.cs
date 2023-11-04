@@ -1,4 +1,5 @@
 ﻿global using FFmpeg;
+global using FFMedia;
 global using FFMedia.Primitives;
 global using FFMedia.Components;
 global using FFmpeg.AutoGen.Abstractions;

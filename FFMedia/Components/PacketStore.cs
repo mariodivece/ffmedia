@@ -5,6 +5,8 @@ namespace FFMedia.Components;
 /// <summary>
 /// Represents a queue-style data structure that stores
 /// stream packets that belong to a specific component.
+/// This class is backed by a <see cref="Channel{T}"/> and it is
+/// thread-safe.
 /// </summary>
 public sealed class PacketStore : ISerialGroupable, IDisposable
 {
@@ -61,6 +63,8 @@ public sealed class PacketStore : ISerialGroupable, IDisposable
 
     /// <summary>
     /// Opens the queue for enqueueing and dequeueing.
+    /// Automatically enqueues a special flush packet.
+    /// This method has to be called in order to start enqueuing packets.
     /// </summary>
     public void Open()
     {
@@ -68,7 +72,20 @@ public sealed class PacketStore : ISerialGroupable, IDisposable
             throw new ObjectDisposedException(nameof(PacketStore));
 
         IsClosed = false;
-        Enqueue(FFPacket.CreateFlushPacket());
+        this.EnqueueFlush();
+    }
+
+    /// <summary>
+    /// Closes the packet queue preventing more packets from being queued.
+    /// This method can only be called once.
+    /// </summary>
+    public void Close()
+    {
+        if (IsClosed)
+            return;
+
+        IsClosed = true;
+        _ = PacketChannel.Writer.TryComplete();
     }
 
     /// <summary>
@@ -77,7 +94,6 @@ public sealed class PacketStore : ISerialGroupable, IDisposable
     /// </summary>
     /// <remarks>
     /// ffplay.c packet_queue_put_private
-    /// 
     /// </remarks>
     /// <param name="packet">The packet to enqueue.</param>
     /// <returns>True when the operation succeeds. False otherwise.</returns>
@@ -154,18 +170,6 @@ public sealed class PacketStore : ISerialGroupable, IDisposable
 
         Interlocked.Exchange(ref m_ByteSize, 0);
         Interlocked.Exchange(ref m_DurationUnits, 0);
-    }
-
-    /// <summary>
-    /// Closes the packet queue preventing more packets from being queued.
-    /// </summary>
-    public void Close()
-    {
-        if (IsClosed)
-            return;
-
-        IsClosed = true;
-        _ = PacketChannel.Writer.TryComplete();
     }
 
     /// <inheritdoc />
