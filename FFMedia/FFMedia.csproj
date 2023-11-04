@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<EnableNETAnalyzers>true</EnableNETAnalyzers>
+		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+		<AnalysisMode>AllEnabledByDefault</AnalysisMode>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageId>FFMedia</PackageId>
+		<Version>1.0.0-alpha.1</Version>
+		<Authors>mariodivece</Authors>
+		<Company>Mario Di Vece</Company>
+		<Product>FFMedia Base Library</Product>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Description>Provides functionality for building cross-platform FFmpeg-based media players.</Description>
+		<Copyright>(c) 2019-2023 Mario Di Vece</Copyright>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>ffmpeg, multimedia, audio, video</PackageTags>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/mariodivece/ffmedia</RepositoryUrl>
+		<PackageReleaseNotes>Please review the examples in the repo for usage.</PackageReleaseNotes>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+	
+	<ItemGroup>
+	  <PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="6.0.0.2" />
+	</ItemGroup>
+
+</Project>

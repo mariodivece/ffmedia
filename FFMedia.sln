@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34221.43
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFMedia", "FFMedia\FFMedia.csproj", "{3B5E58F0-42A2-426C-9E2F-91439338703A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFMedia.ScrapBook", "FFMedia.ScrapBook\FFMedia.ScrapBook.csproj", "{7AC08CB9-FF34-4426-A358-06A7C5A6D4E5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3B5E58F0-42A2-426C-9E2F-91439338703A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B5E58F0-42A2-426C-9E2F-91439338703A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B5E58F0-42A2-426C-9E2F-91439338703A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B5E58F0-42A2-426C-9E2F-91439338703A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7AC08CB9-FF34-4426-A358-06A7C5A6D4E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7AC08CB9-FF34-4426-A358-06A7C5A6D4E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7AC08CB9-FF34-4426-A358-06A7C5A6D4E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7AC08CB9-FF34-4426-A358-06A7C5A6D4E5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EE000C1F-0F7E-4D11-B98D-8DA9FF348A2B}
+	EndGlobalSection
+EndGlobal
