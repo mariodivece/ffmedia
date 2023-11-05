@@ -1,45 +1,12 @@
 ﻿namespace FFmpeg;
 
-
-public unsafe class FFVideoFrame : FFFrame, IPictureSpec
-{
-    /// <summary>
-    /// Initializes and allocates a new instance of the <see cref="FFFrame"/> class.
-    /// </summary>
-    /// <param name="filePath"></param>
-    /// <param name="lineNumber"></param>
-    public FFVideoFrame(
-        [CallerFilePath] string? filePath = default,
-        [CallerLineNumber] int? lineNumber = default)
-        : base(filePath, lineNumber)
-    {
-        // placeholder
-    }
-
-    public nint BufferAddress => new(Target->data[0]);
-
-    public AVPixelFormat PixelFormat => (AVPixelFormat)Target->format;
-
-    public int PixelWidth => Target->width;
-
-    public int PixelHeight => Target->height;
-
-    public int RowBytes => Target->linesize[0];
-
-    public AVRational PixelAspectRatio => Target->sample_aspect_ratio.num == 0 && Target->sample_aspect_ratio.den == 1
-        ? new() { num = 1, den = 1}
-        : ffmpeg.av_d2q(ffmpeg.av_q2d(Target->sample_aspect_ratio), int.MaxValue - 1);
-
-    public double DpiX => 96.0 * PixelAspectRatio.num;
-
-    public double DpiY => 96.0 * PixelAspectRatio.den;
-}
-
 /// <summary>
 /// Represents a wrapper for the <see cref="AVFrame"/> structure.
 /// </summary>
-public unsafe class FFFrame :
-    NativeTrackedReferenceBase<AVFrame>
+public unsafe sealed class FFFrame :
+    NativeTrackedReferenceBase<AVFrame>,
+    IVideoFrame,
+    IWaveBufferSpec
 {
     /// <summary>
     /// Initializes and allocates a new instance of the <see cref="FFFrame"/> class.
@@ -55,20 +22,92 @@ public unsafe class FFFrame :
     }
 
     /// <summary>
+    /// Creates an instance of the <see cref="FFPacket"/> class, from an already allocated
+    /// <see cref="AVFrame"/>
+    /// </summary>
+    /// <param name="target">The allocated frame pointer.</param>
+    /// <param name="filePath">The source file path.</param>
+    /// <param name="lineNumber">The source line number.</param>
+    public FFFrame(AVFrame* target,
+        [CallerFilePath] string? filePath = default,
+        [CallerLineNumber] int? lineNumber = default)
+        : base(target, filePath, lineNumber)
+    {
+        // placeholder
+    }
+
+    #region Video Frame Spec
+
+    nint IPictureBufferSpec.BufferAddress => new(Target->data[0]);
+
+    /// <inheritdoc />
+    AVPixelFormat IPictureSpec.PixelFormat => (AVPixelFormat)Target->format;
+
+    /// <inheritdoc />
+    int IPictureSpec.PixelWidth => Target->width;
+
+    /// <inheritdoc />
+    int IPictureSpec.PixelHeight => Target->height;
+
+    /// <inheritdoc />
+    int IPictureSpec.RowBytes => Target->linesize[0];
+
+    /// <inheritdoc />
+    AVRational IPictureSpec.PixelAspectRatio => !Target->sample_aspect_ratio.IsValid()
+        ? IPictureSpec.DefaultPixelAspectRatio
+        : Target->sample_aspect_ratio.Normalize();
+
+    #endregion
+
+    #region Video Frame
+
+    /// <inheritdoc />
+    bool IVideoFrame.IsKeyFrame => Target->key_frame != 0;
+
+    /// <inheritdoc />
+    AVPictureType IVideoFrame.PictureType => Target->pict_type;
+
+    /// <inheritdoc />
+    int IVideoFrame.CodedPictureNumber => Target->coded_picture_number;
+
+    /// <inheritdoc />
+    int IVideoFrame.DisplayPictureNumber => Target->display_picture_number;
+
+    /// <inheritdoc />
+    int IVideoFrame.RepeatCount => Target->repeat_pict;
+
+    /// <inheritdoc />
+    bool IVideoFrame.IsInterlaced => Target->interlaced_frame != 0;
+
+    /// <inheritdoc />
+    bool IVideoFrame.IsTopFieldFirst => Target->top_field_first != 0;
+
+    #endregion
+
+    #region Audio Frame Spec
+
+    /// <inheritdoc />
+    AVSampleFormat IWaveSpec.SampleFormat => (AVSampleFormat)Target->format;
+
+    /// <inheritdoc />
+    int IWaveSpec.ChannelCount => Target->ch_layout.nb_channels;
+
+    /// <inheritdoc />
+    int IWaveSpec.SampleRate => Target->sample_rate;
+
+    /// <inheritdoc />
+    nint IWaveBufferSpec.BufferAddress => new(Target->extended_data[0]);
+
+    /// <inheritdoc />
+    int IWaveBufferSpec.SampleCount => Target->nb_samples;
+
+    #endregion
+
+    /// <summary>
     /// Gets the reordered position from the last <see cref="AVPacket"/>
     /// that has been input into the decoder.
     /// </summary>
     public long PacketPosition => Target->pkt_pos;
-
-    /// <summary>
-    /// Gets the audio sample format of the frame.
-    /// </summary>
-    public AVSampleFormat SampleFormat => (AVSampleFormat)Target->format;
-
-    /// <summary>
-    /// Gets the name of the <see cref="SampleFormat"/>.
-    /// </summary>
-    public string SampleFormatName => ffmpeg.av_get_sample_fmt_name(SampleFormat);
 
     /// <summary>Gets
     /// Gets a pointer to the picture/channel planes. This might be different from the first allocated byte.
@@ -76,39 +115,26 @@ public unsafe class FFFrame :
     /// </summary>
     public byte_ptr8 Data => Target->data;
 
+    /// <summary>
+    /// Gets the Presentation timestamp in
+    /// time base units (time when frame should be shown to user).
+    /// </summary>
+    public long? Pts => Target->pts.ToNullable();
 
-    public int SampleCount => Target->nb_samples;
-
-    public int Channels => Target->ch_layout.nb_channels;
-
-    public int SampleRate => Target->sample_rate;
-
-    public double AudioComputedDuration => (double)SampleCount / SampleRate;
-
-    public long Pts
-    {
-        get => Target->pts;
-        set => Target->pts = value;
-    }
-
+    /// <summary>
+    /// Gets the DTS copied from the AVPacket that triggered returning this frame. (if frame threading isn't used)
+    /// This is also the Presentation time of this <see cref="AVFrame"/> calculated from only <see cref="AVPacket.dts"/>
+    /// values without pts values.
+    /// </summary>
     public long? PacketDts => Target->pkt_dts.ToNullable();
 
     /// <summary>
-    /// Gets the frame timestamp estimated using various heuristics, in stream time base.
+    /// Gets the frame timestamp estimated using various heuristics, in stream time base units.
     /// </summary>
     public long? BestEffortPts => Target->best_effort_timestamp.ToNullable();
 
-    public byte** ExtendedData
-    {
-        get => Target->extended_data;
-        set => Target->extended_data = value;
-    }
-
-    public AVChannelLayout ChannelLayout =>
-        Target->ch_layout;
-
-    public int SamplesBufferSize =>
-        AudioParams.ComputeSamplesBufferSize(Channels, SampleCount, SampleFormat, true);
+    /// <summary>Gets the pointers to the data planes/channels.</summary>
+    public byte** ExtendedData => Target->extended_data;
 
     /// <summary>
     /// Unreference all the buffers referenced by frame and reset the frame fields.
@@ -121,8 +147,23 @@ public unsafe class FFFrame :
     /// </summary>
     /// <remarks>See <see cref="ffmpeg.av_frame_move_ref"/>.</remarks>
     /// <param name="destination">The destination frame.</param>
-    public void MoveTo(FFFrame destination) =>
-        ffmpeg.av_frame_move_ref(destination!.Target, Target);
+    public void MoveTo(FFFrame destination)
+    {
+        if (destination is null)
+            throw new ArgumentNullException(nameof(destination));
+        ffmpeg.av_frame_move_ref(destination.Target, Target);
+    }
+
+    /// <summary>
+    /// Makes a newly allocated copy of this frame that references the same <see cref="Data"/>.
+    /// </summary>
+    /// <remarks>See <see cref="ffmpeg.av_frame_clone"/>.</remarks>
+    /// <returns>The cloned frame.</returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public FFFrame Clone(
+        [CallerFilePath] string? filePath = default,
+        [CallerLineNumber] int? lineNumber = default) =>
+        new(ffmpeg.av_frame_clone(Target), filePath, lineNumber);
 
     /// <inheritdoc />
     protected override void ReleaseInternal(AVFrame* target) =>

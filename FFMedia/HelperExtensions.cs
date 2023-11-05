@@ -1,11 +1,13 @@
-﻿namespace FFMedia;
+﻿using System.Text;
+
+namespace FFMedia;
 
 internal static class HelperExtensions
 {
 
 
 
-    public static bool IsValidTimestamp(this long ts) => ts != ffmpeg.AV_NOPTS_VALUE;
+
 
     /// <summary>
     /// Enqueues a codec flush packet to signal the start of a packet sequence.
@@ -22,35 +24,31 @@ internal static class HelperExtensions
     public static bool EnqueueNull(this PacketStore store, int streamIndex) =>
         store.Enqueue(FFPacket.CreateNullPacket(streamIndex));
 
-    /// <summary>
-    /// Converts a 0/1 rational number to a null value.
-    /// </summary>
-    /// <param name="r">The rational number.</param>
-    /// <returns>The nullable number</returns>
-    public static AVRational? ToNullable(this AVRational r) =>
-        r.num == 0 && r.den == 1 ? null : r;
-
-    /// <summary>
-    /// Converts a null rational number to a 0/1 value.
-    /// </summary>
-    /// <param name="r">The rational number.</param>
-    /// <returns>The non-nullable number</returns>
-    public static AVRational FromNullable(this AVRational? r) =>
-        r.GetValueOrDefault(new() { num = 0, den = 1});
+    public static bool IsValidTimestamp(this long ts) => ts != ffmpeg.AV_NOPTS_VALUE;
 
     /// <summary>
     /// Converts a <see cref="ffmpeg.AV_NOPTS_VALUE"/> to a null value.
     /// </summary>
     /// <param name="r">The number.</param>
     /// <returns>The nullable number.</returns>
-    public static long? ToNullable(this long r) =>
-        r == ffmpeg.AV_NOPTS_VALUE ? null : r;
+    public static long? ToNullable(this long r) => r == ffmpeg.AV_NOPTS_VALUE ? null : r;
 
-    /// <summary>
-    /// Converts a null value to a <see cref="ffmpeg.AV_NOPTS_VALUE"/>.
-    /// </summary>
-    /// <param name="r">The number.</param>
-    /// <returns>The non-nullable number.</returns>
-    public static long FromNullable(this long? r) =>
-        r.GetValueOrDefault(ffmpeg.AV_NOPTS_VALUE);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe string? ReadString(this nint address)
+    {
+        if (address == default)
+            return default;
+
+        var source = (byte*)address.ToPointer();
+        var length = 0;
+        while (source[length] != 0)
+            ++length;
+
+        if (length == 0)
+            return string.Empty;
+
+        var byteSpan = new Span<byte>(source, length);
+        return Encoding.UTF8.GetString(byteSpan);
+    }
+
 }
