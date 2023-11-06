@@ -1,10 +1,6 @@
-﻿namespace FFmpeg;
+﻿namespace FFMedia.Extensions;
 
-/// <summary>
-/// Defines constants and extension methods for working with the <see cref="AVRational"/>
-/// data structure.
-/// </summary>
-public static class FFRational
+internal static class RationalExtensions
 {
     /// <summary>
     /// Defines the maximum integer value to represent either a numerator or denominator when
@@ -28,6 +24,13 @@ public static class FFRational
     /// <param name="r">The value to check.</param>
     /// <returns>True if the rational number is valid. False otherwise.</returns>
     public static bool IsValid(this AVRational r) => r.den != 0;
+
+    /// <summary>
+    /// Checks if both the numerator and the denominator is not 0.
+    /// </summary>
+    /// <param name="r">The value to check.</param>
+    /// <returns>True if the rational number is valid. False otherwise.</returns>
+    public static bool HasValue(this AVRational r) => r.den != 0 && r.num != 0;
 
     /// <summary>
     /// Converts a rational to a double.

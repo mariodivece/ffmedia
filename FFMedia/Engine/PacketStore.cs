@@ -1,6 +1,6 @@
 ﻿using System.Threading.Channels;
 
-namespace FFMedia.Components;
+namespace FFMedia.Engine;
 
 /// <summary>
 /// Represents a queue-style data structure that stores
@@ -8,7 +8,9 @@ namespace FFMedia.Components;
 /// This class is backed by a <see cref="Channel{T}"/> and it is
 /// thread-safe.
 /// </summary>
-public sealed class PacketStore : ISerialGroupable, IDisposable
+public sealed class PacketStore :
+    ISerialGroupable,
+    IDisposable
 {
     private readonly Channel<FFPacket> PacketChannel;
     private long isDisposed;
@@ -130,7 +132,7 @@ public sealed class PacketStore : ISerialGroupable, IDisposable
     /// <remarks>
     /// ffplay.c packet_queue_get
     /// </remarks>
-    /// <param name="blockWait">When true, waits for a newly available packet.</param>
+    /// <param name="blockWait">When true, blocks and waits for a newly available packet.</param>
     /// <param name="packet">The dequeued packet. May contain null if no packet was dequeued.</param>
     /// <returns>True when the operation succeeds. False otherwise.</returns>
     public bool TryDequeue(bool blockWait, [MaybeNullWhen(false)] out FFPacket? packet)

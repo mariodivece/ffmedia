@@ -9,6 +9,8 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     /// Creates an instance of the <see cref="FFPacket"/> class, automatically allocating the <see cref="AVPacket"/>
     /// in native memory.
     /// </summary>
+    /// <param name="filePath">The source file path.</param>
+    /// <param name="lineNumber">The source line number.</param>
     public FFPacket(
         [CallerFilePath] string? filePath = default,
         [CallerLineNumber] int? lineNumber = default)
@@ -124,10 +126,12 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     /// stream index.
     /// </summary>
     /// <param name="streamIndex">The stream index for which this empty packet was allocated.</param>
+    /// <param name="filePath">The source file path.</param>
+    /// <param name="lineNumber">The source line number.</param>
     /// <returns>The newly created and allocated packet.</returns>
     public static FFPacket CreateNullPacket(int streamIndex,
         [CallerFilePath] string? filePath = default,
-        [CallerLineNumber] int? lineNumber = default) => new()
+        [CallerLineNumber] int? lineNumber = default) => new(filePath, lineNumber)
         {
             Data = default,
             Size = 0,
@@ -139,6 +143,8 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     /// Makes a newly allocated copy of this packet that references the same <see cref="Data"/>.
     /// </summary>
     /// <remarks>See <see cref="ffmpeg.av_packet_clone"/>.</remarks>
+    /// <param name="filePath">The source file path.</param>
+    /// <param name="lineNumber">The source line number.</param>
     /// <returns>The cloned packet.</returns>
     /// <exception cref="InvalidOperationException"></exception>
     public FFPacket Clone(

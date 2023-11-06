@@ -13,5 +13,5 @@ public interface IPictureBufferSpec : IPictureSpec
     /// <summary>
     /// Gets the number of bytes for this buffer.
     /// </summary>
-    int BufferLength => RowBytes * PixelHeight;
+    int BufferLength {  get; }
 }
