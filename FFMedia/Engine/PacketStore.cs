@@ -114,13 +114,14 @@ public sealed class PacketStore :
             ? Interlocked.Increment(ref m_GroupIndex)
             : Interlocked.CompareExchange(ref m_GroupIndex, 0, 0);
 
-        Interlocked.Add(ref m_ByteSize, packet.Size + packet.StructureSize);
-        Interlocked.Add(ref m_DurationUnits, packet.DurationUnits);
         if (!PacketChannel.Writer.TryWrite(packet))
         {
             packet.Dispose();
             return false;
         }
+
+        Interlocked.Add(ref m_ByteSize, packet.Size + packet.StructureSize);
+        Interlocked.Add(ref m_DurationUnits, packet.DurationUnits);
 
         return true;
     }
