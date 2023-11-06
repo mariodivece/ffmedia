@@ -17,4 +17,23 @@ internal static unsafe class PictureExtensions
         var bitsPerPixel = ffmpeg.av_get_padded_bits_per_pixel(descriptor);
         return bitsPerPixel / BitsPerByte;
     }
+
+    /// <summary>
+    /// Gets the pixel format replacing deprecated pixel formats.
+    /// AV_PIX_FMT_YUVJXXXX are replaced with their AV_PIX_FMT_YUVXXXX equivalents.
+    /// </summary>
+    /// <param name="format">The format.</param>
+    /// <returns>A normalized pixel format.</returns>
+    public static AVPixelFormat Normalize(this AVPixelFormat format)
+    {
+        return format switch
+        {
+            AVPixelFormat.AV_PIX_FMT_YUVJ411P => AVPixelFormat.AV_PIX_FMT_YUV411P,
+            AVPixelFormat.AV_PIX_FMT_YUVJ420P => AVPixelFormat.AV_PIX_FMT_YUV420P,
+            AVPixelFormat.AV_PIX_FMT_YUVJ422P => AVPixelFormat.AV_PIX_FMT_YUV422P,
+            AVPixelFormat.AV_PIX_FMT_YUVJ440P => AVPixelFormat.AV_PIX_FMT_YUV440P,
+            AVPixelFormat.AV_PIX_FMT_YUVJ444P => AVPixelFormat.AV_PIX_FMT_YUV444P,
+            _ => format,
+        };
+    }
 }

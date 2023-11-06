@@ -39,7 +39,7 @@ public unsafe class FFVideoFrame :
     public nint BufferAddress => new(Target->data[0]);
 
     /// <inheritdoc />
-    public AVPixelFormat PixelFormat => (AVPixelFormat)Target->format;
+    public AVPixelFormat PixelFormat => ((AVPixelFormat)Target->format).Normalize();
 
     /// <inheritdoc />
     public int PixelWidth => Target->width;
