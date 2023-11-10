@@ -3,7 +3,7 @@
 /// <summary>
 /// Defines the members for a working video frame.
 /// </summary>
-public interface IVideoFrame : IPictureBufferSpec
+public interface IVideoFrame : IPictureBufferSpec, IMediaFrame
 {
     /// <summary>
     /// Defines the default DPI in the X direction (96 dpi).

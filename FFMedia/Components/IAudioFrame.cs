@@ -3,7 +3,7 @@
 /// <summary>
 /// Defines the members for a working audio frame.
 /// </summary>
-public interface IAudioFrame : IWaveBufferSpec
+public interface IAudioFrame : IWaveBufferSpec, IMediaFrame
 {
     /// <summary>
     /// Defines the default audio sample format (S16).

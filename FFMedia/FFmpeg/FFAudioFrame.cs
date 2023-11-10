@@ -5,7 +5,7 @@
 /// </summary>
 public unsafe class FFAudioFrame :
     FFFrameBase,
-    IAudioFrame
+    IWaveBufferSpec
 {
 
     /// <summary>

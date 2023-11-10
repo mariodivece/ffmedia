@@ -5,7 +5,7 @@
 /// </summary>
 public unsafe class FFVideoFrame :
     FFFrameBase,
-    IVideoFrame
+    IPictureBufferSpec
 {
     /// <summary>
     /// Initializes and allocates a new instance of the <see cref="FFVideoFrame"/> class.

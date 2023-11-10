@@ -2,8 +2,7 @@
 
 public unsafe class FFSubtitleFrame :
     NativeTrackedReferenceBase<AVSubtitle>,
-    INativeFrame,
-    ISubtitleFrame
+    INativeFrame
 {
     public FFSubtitleFrame([CallerFilePath] string? filePath = default, [CallerLineNumber] int? lineNumber = default)
     : base(filePath, lineNumber)

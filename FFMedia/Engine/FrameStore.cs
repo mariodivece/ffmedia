@@ -9,9 +9,14 @@ namespace FFMedia.Engine;
 /// the readable frame queue. Readable frames are peeeked and then dequeued and back
 /// on to the writable frames queue.
 /// </summary>
-public sealed class FrameStore
+public abstract class FrameStore<TNative, TMedia>
+    where TNative : INativeFrame
+    where TMedia : IMediaFrame
     //IDisposable,
     //ISerialGroupable
 {
-    
+    protected FrameStore()
+    {
+
+    }
 }

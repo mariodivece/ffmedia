@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace FFMedia.Components;
 
-namespace FFMedia.Components;
-
-public interface ISubtitleFrame
+public interface ISubtitleFrame : IMediaFrame
 {
 
 }
