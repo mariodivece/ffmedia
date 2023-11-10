@@ -12,9 +12,12 @@ public sealed class PacketStore :
     ISerialGroupable,
     IDisposable
 {
+    private readonly object SyncRoot = new();
     private readonly Channel<FFPacket> PacketChannel;
-    private long isDisposed;
-    private long m_IsClosed = 1; // starts in a blocked state
+
+    private long m_IsDisposed;
+    private long m_IsClosed;
+
     private int m_ByteSize;
     private long m_DurationUnits;
     private int m_GroupIndex;
@@ -24,6 +27,8 @@ public sealed class PacketStore :
     /// </summary>
     public PacketStore()
     {
+        // starts in a blocked state
+        IsClosed = true;
         PacketChannel = Channel.CreateUnbounded<FFPacket>(new()
         {
             SingleWriter = false,
@@ -51,17 +56,38 @@ public sealed class PacketStore :
     /// Gets the total size in bytes of the packets
     /// and their content buffers.
     /// </summary>
-    public int ByteSize => Interlocked.CompareExchange(ref m_ByteSize, 0, 0);
+    public int ByteSize
+    {
+        get
+        {
+            lock (SyncRoot)
+                return m_ByteSize;
+        }
+    }
 
     /// <summary>
     /// Gets the packet queue duration in stream time base units.
     /// </summary>
-    public long DurationUnits => Interlocked.Read(ref m_DurationUnits);
+    public long DurationUnits
+    {
+        get
+        {
+            lock (SyncRoot)
+                return m_DurationUnits;
+        }
+    }
 
     /// <summary>
     /// Gets the group (serial) the packet queue is currently on.
     /// </summary>
-    public int GroupIndex => Interlocked.CompareExchange(ref m_GroupIndex, 0, 0);
+    public int GroupIndex
+    {
+        get
+        {
+            lock (SyncRoot)
+                return m_GroupIndex;
+        }
+    }
 
     /// <summary>
     /// Opens the queue for enqueueing and dequeueing.
@@ -70,7 +96,7 @@ public sealed class PacketStore :
     /// </summary>
     public void Open()
     {
-        if (Interlocked.Read(ref isDisposed) > 0)
+        if (Interlocked.Read(ref m_IsDisposed) > 0)
             throw new ObjectDisposedException(nameof(PacketStore));
 
         IsClosed = false;
@@ -83,10 +109,9 @@ public sealed class PacketStore :
     /// </summary>
     public void Close()
     {
-        if (IsClosed)
+        if (Interlocked.Increment(ref m_IsClosed) > 1)
             return;
 
-        IsClosed = true;
         _ = PacketChannel.Writer.TryComplete();
     }
 
@@ -101,27 +126,31 @@ public sealed class PacketStore :
     /// <returns>True when the operation succeeds. False otherwise.</returns>
     public bool Enqueue(FFPacket packet)
     {
-        if (IsClosed)
-        {
-            packet?.Dispose();
-            return false;
-        }
-
         if (packet is null)
             throw new ArgumentNullException(nameof(packet));
 
-        packet.GroupIndex = packet.IsFlushPacket
-            ? Interlocked.Increment(ref m_GroupIndex)
-            : Interlocked.CompareExchange(ref m_GroupIndex, 0, 0);
-
-        if (!PacketChannel.Writer.TryWrite(packet))
+        if (IsClosed)
         {
             packet.Dispose();
             return false;
         }
 
-        Interlocked.Add(ref m_ByteSize, packet.Size + packet.StructureSize);
-        Interlocked.Add(ref m_DurationUnits, packet.DurationUnits);
+        lock (SyncRoot)
+        {
+            if (!PacketChannel.Writer.TryWrite(packet))
+            {
+                packet.Dispose();
+                return false;
+            }
+
+            if (packet.IsFlushPacket)
+                m_GroupIndex++;
+
+            packet.GroupIndex = m_GroupIndex;
+
+            m_ByteSize += packet.DataSize + packet.StructureSize;
+            m_DurationUnits += packet.DurationUnits;
+        }
 
         return true;
     }
@@ -143,18 +172,21 @@ public sealed class PacketStore :
         if (IsClosed)
             return default;
 
-        if (blockWait)
+        lock (SyncRoot)
         {
-            var waitTask = PacketChannel.Reader.WaitToReadAsync(CancellationToken.None);
-            if (!waitTask.IsCompleted)
-                _ = waitTask.AsTask().GetAwaiter().GetResult();
-        }
+            if (blockWait)
+            {
+                var waitTask = PacketChannel.Reader.WaitToReadAsync(CancellationToken.None);
+                if (!waitTask.IsCompleted)
+                    _ = waitTask.AsTask().GetAwaiter().GetResult();
+            }
 
-        if (PacketChannel.Reader.TryRead(out packet) && packet is not null)
-        {
-            Interlocked.Add(ref m_ByteSize, -(packet.Size + packet.StructureSize));
-            Interlocked.Add(ref m_DurationUnits, -packet.DurationUnits);
-            return true;
+            if (PacketChannel.Reader.TryRead(out packet) && packet is not null)
+            {
+                m_ByteSize -= (packet.DataSize + packet.StructureSize);
+                m_DurationUnits -= packet.DurationUnits;
+                return true;
+            }
         }
 
         return default;
@@ -167,18 +199,29 @@ public sealed class PacketStore :
     {
         while (Count > 0)
         {
-            if (PacketChannel.Reader.TryRead(out var packet))
-                packet?.Dispose();
-        }
+            lock (SyncRoot)
+            {
+                FFPacket? packet = null;
+                try
+                {
+                    if (!PacketChannel.Reader.TryRead(out packet) || packet is null)
+                        continue;
 
-        Interlocked.Exchange(ref m_ByteSize, 0);
-        Interlocked.Exchange(ref m_DurationUnits, 0);
+                    m_ByteSize -= (packet.DataSize + packet.StructureSize);
+                    m_DurationUnits -= packet.DurationUnits;
+                }
+                finally
+                {
+                    packet?.Dispose();
+                }
+            }
+        }
     }
 
     /// <inheritdoc />
     public void Dispose()
     {
-        if (Interlocked.Increment(ref isDisposed) > 1)
+        if (Interlocked.Increment(ref m_IsDisposed) > 1)
             return;
 
         Close();

@@ -1,6 +1,5 @@
 ﻿
 using FFMedia.ServiceModel;
-using System.Diagnostics;
 using System.Threading.Channels;
 using FFmpegBindings = FFmpeg.AutoGen.Bindings.DynamicallyLoaded.DynamicallyLoadedBindings;
 

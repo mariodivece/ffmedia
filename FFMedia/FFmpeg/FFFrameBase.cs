@@ -4,7 +4,8 @@
 /// Represents a wrapper for the <see cref="AVFrame"/> structure.
 /// </summary>
 public unsafe abstract class FFFrameBase :
-    NativeTrackedReferenceBase<AVFrame>
+    NativeTrackedReferenceBase<AVFrame>,
+    INativeFrame
 {
     /// <summary>
     /// Initializes and allocates a new instance of the <see cref="FFFrameBase"/> class.
@@ -34,37 +35,22 @@ public unsafe abstract class FFFrameBase :
         // placeholder
     }
 
-    /// <summary>
-    /// Gets the reordered position from the last <see cref="AVPacket"/>
-    /// that has been input into the decoder.
-    /// </summary>
+    /// <inheritdoc />
     public long PacketPosition => Target->pkt_pos;
 
-    /// <summary>Gets
-    /// Gets a pointer to the picture/channel planes. This might be different from the first allocated byte.
-    /// For video, it could even point to the end of the image data.
-    /// </summary>
+    /// <inheritdoc />
     public byte_ptr8 Data => Target->data;
 
-    /// <summary>
-    /// Gets the Presentation timestamp in
-    /// time base units (time when frame should be shown to user).
-    /// </summary>
+    /// <inheritdoc />
     public long? Pts => Target->pts.ToNullable();
 
-    /// <summary>
-    /// Gets the DTS copied from the AVPacket that triggered returning this frame. (if frame threading isn't used)
-    /// This is also the Presentation time of this <see cref="AVFrame"/> calculated from only <see cref="AVPacket.dts"/>
-    /// values without pts values.
-    /// </summary>
+    /// <inheritdoc />
     public long? PacketDts => Target->pkt_dts.ToNullable();
 
-    /// <summary>
-    /// Gets the frame timestamp estimated using various heuristics, in stream time base units.
-    /// </summary>
+    /// <inheritdoc />
     public long? BestEffortPts => Target->best_effort_timestamp.ToNullable();
 
-    /// <summary>Gets the pointers to the data planes/channels.</summary>
+    /// <inheritdoc />
     public byte** ExtendedData => Target->extended_data;
 
     /// <summary>
@@ -79,7 +65,7 @@ public unsafe abstract class FFFrameBase :
     /// <remarks>See <see cref="ffmpeg.av_frame_move_ref"/>.</remarks>
     /// <param name="destination">The destination frame.</param>
     public void MoveTo<T>(T destination)
-        where T : FFFrameBase
+        where T : INativeReference<AVFrame>
     {
         if (destination is null)
             throw new ArgumentNullException(nameof(destination));

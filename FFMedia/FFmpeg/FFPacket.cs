@@ -34,11 +34,6 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
         // placeholder
     }
 
-    /// <summary>
-    /// Gets or sets the next packet in a chain of packets. Similiar to <see cref="AVPacketList"/>.
-    /// </summary>
-    public FFPacket? Next { get; set; }
-
     /// <inheritdoc />
     public int GroupIndex { get; set; }
 
@@ -70,7 +65,7 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     /// <summary>
     /// Gets the number of bytes in the packet's <see cref="Data"/>.
     /// </summary>
-    public int Size
+    public int DataSize
     {
         get => Target->size;
         set => Target->size = value;
@@ -113,7 +108,7 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     {
         var packet = new FFPacket(filePath, lineNumber)
         {
-            Size = 0,
+            DataSize = 0,
             IsFlushPacket = true
         };
 
@@ -134,7 +129,7 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
         [CallerLineNumber] int? lineNumber = default) => new(filePath, lineNumber)
         {
             Data = default,
-            Size = 0,
+            DataSize = 0,
             StreamIndex = streamIndex,
             DurationUnits = 0
         };
