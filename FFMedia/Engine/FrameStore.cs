@@ -14,7 +14,7 @@ public partial class FrameStore<TMedia> :
     where TMedia : class, IMediaFrame
 {
     private readonly ExclusiveLock SyncLocker = new();
-    private readonly SortedList<TimeExtent, TMedia> Frames;
+    private readonly SortedFrameList Frames;
 
     private int m_Count;
     private long m_IsDisposed;
