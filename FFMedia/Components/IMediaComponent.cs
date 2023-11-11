@@ -1,14 +1,13 @@
 ﻿namespace FFMedia.Components;
 
-internal interface IMediaComponent<TNative, TMedia> :
-    ISerialGroupable
-    where TNative : INativeFrame
-    where TMedia : IMediaFrame
+public interface IMediaComponent<TMedia> :
+    ISerialGroupable,
+    IDisposable
+    where TMedia : class, IMediaFrame
 {
     AVMediaType MediaType { get; }
 
     PacketStore Packets { get; }
 
-    FrameStore<TNative, TMedia> Frames { get; }
-
+    FrameStore<TMedia> Frames { get; }
 }
