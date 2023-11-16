@@ -4,26 +4,28 @@ namespace FFMedia.Engine;
 
 public partial class FrameStore<TMedia>
 {
-    private sealed class SortedFrameList : IList<TMedia>
+    internal sealed class FrameGraph(FrameStore<TMedia> parent, int initialCapacity) :
+        IList<TMedia>,
+        IFrameGraph<TMedia>
     {
-        private readonly SortedList<TimeExtent, TMedia> Frames;
-
-        public SortedFrameList(int initialCapacity)
-        {
-            Frames = new(initialCapacity);
-        }
+        private readonly SortedList<TimeExtent, TMedia> Frames = new(initialCapacity);
+        private readonly FrameStore<TMedia> Parent = parent;
 
         public TMedia this[int index]
         {
             get => Frames.GetValueAtIndex(index);
-            set => throw new NotSupportedException($"Setting an item at an index of a '{nameof(SortedFrameList)}' defeats its purpose.");
+            set => throw new NotSupportedException($"Setting an item at an index of this graph defeats its purpose.");
         }
+
+        public IMediaComponent<TMedia> Component => Parent.Component;
 
         public int Count => Frames.Count;
 
+        public bool IsFull => Frames.Count >= Parent.Capacity;
+
         public bool IsReadOnly => false;
 
-        public bool IsEmpty => Frames.Any();
+        public bool IsEmpty => Frames.Count <= 0;
 
         public int MinIndex => IsEmpty ? -1 : 0;
 
@@ -47,16 +49,17 @@ public partial class FrameStore<TMedia>
             ? TimeExtent.Zero
             : RangeEndTime - RangeStartTime;
 
+        public int GroupIndex { get; set; }
+
         public void Add(TMedia item)
         {
-            if (item is null)
-                throw new ArgumentNullException(nameof(item));
+            ArgumentNullException.ThrowIfNull(item);
 
             if (item.StartTime.IsNaN)
-                throw new ArgumentException($"{nameof(item)}.{nameof(item.StartTime)} has to be finite.");
+                throw new ArgumentException($"{nameof(item)} '{nameof(item.StartTime)}' has to be finite.");
 
             if (item.Duration.IsNaN || item.Duration < TimeExtent.Zero)
-                throw new ArgumentException($"{nameof(item)}.{nameof(item.Duration)} has to be finite and non-negative.");
+                throw new ArgumentException($"{nameof(item)} '{nameof(item.Duration)}' has to be finite and non-negative.");
 
             if (Frames.ContainsValue(item))
                 throw new ArgumentException($"{nameof(item)} is already contained in the set.");
@@ -71,6 +74,9 @@ public partial class FrameStore<TMedia>
 
         public bool Contains(TMedia item) => Frames.ContainsValue(item);
 
+        public bool Contains(TimeExtent time) => !time.IsNaN && !IsEmpty &&
+            time >= RangeStartTime && time <= RangeEndTime;
+
         public void CopyTo(TMedia[] array, int arrayIndex) => Frames.Values.CopyTo(array, arrayIndex);
 
         public IEnumerator<TMedia> GetEnumerator() => Frames.Values.GetEnumerator();
@@ -78,7 +84,7 @@ public partial class FrameStore<TMedia>
         public int IndexOf(TMedia item) => Frames.IndexOfValue(item);
 
         public void Insert(int index, TMedia item) =>
-            throw new NotSupportedException($"Inserting an item at an index of a '{nameof(SortedFrameList)}' defeats its purpose.");
+            throw new NotSupportedException($"Inserting an item at an index of this graph defeats its purpose.");
 
         public bool Remove(TMedia item)
         {
@@ -148,18 +154,7 @@ public partial class FrameStore<TMedia>
             return frameIndex;
         }
 
-        /// <summary>
-        /// Finds the relative position of the specified time within
-        /// <see cref="MinStartTime"/> and <see cref="RangeEndTime"/>.
-        /// Negative numbers: the time occurs before the first position.
-        /// Numbers greater than 1: the time occurs after the last position.
-        /// Numbers 0.0 to 1.0: the time occurs at the given percent of the
-        /// <see cref="TotalDuration"/>. If <see cref="IsEmpty"/> evaluates to true,
-        /// then the output will be 0.0.
-        /// </summary>
-        /// <param name="time">The time to compute the relative position for.</param>
-        /// <returns>The relative position of the given time</returns>
-        public double FindPosition(TimeExtent time)
+        public double FindRelativePosition(TimeExtent time)
         {
             if (IsEmpty)
                 return 0;
@@ -168,18 +163,24 @@ public partial class FrameStore<TMedia>
             return timeOffset / TotalDuration.Milliseconds;
         }
 
-        public double FindPosition(TMedia item)
+        public double FindRelativePosition(TMedia item)
         {
-            if (item is null)
-                throw new ArgumentNullException(nameof(item));
+            ArgumentNullException.ThrowIfNull(item);
 
             if (item.StartTime.IsNaN)
-                throw new ArgumentException($"{nameof(item)}.{nameof(item.StartTime)} has to be finite.");
+                throw new ArgumentException($"{nameof(item)} '{nameof(item.StartTime)}' has to be finite.");
 
             if (item.Duration.IsNaN || item.Duration < TimeExtent.Zero)
-                throw new ArgumentException($"{nameof(item)}.{nameof(item.Duration)} has to be finite and non-negative.");
+                throw new ArgumentException($"{nameof(item)} '{nameof(item.Duration)}' has to be finite and non-negative.");
 
-            return FindPosition(item.StartTime + (item.Duration / 2d));
+            return FindRelativePosition(item.StartTime + (item.Duration / 2d));
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            Parent.CurrentLock?.Dispose();
+            Parent.CurrentLock = null;
         }
     }
 }

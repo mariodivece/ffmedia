@@ -10,6 +10,9 @@ public unsafe class FFSubtitleFrame :
         Update((AVSubtitle*)ffmpeg.av_mallocz((ulong)sizeof(AVSubtitle)));
     }
 
+    /// <inheritdoc />
+    public AVMediaType MediaType => AVMediaType.AVMEDIA_TYPE_SUBTITLE;
+
     #region INativeFrame (Hide most of the implementation because it is useless)
 
     /// <summary>

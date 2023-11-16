@@ -8,6 +8,11 @@ public unsafe interface INativeFrame :
     INativeReference
 {
     /// <summary>
+    /// Gets the media type of this frame.
+    /// </summary>
+    AVMediaType MediaType { get; }
+
+    /// <summary>
     /// Gets the reordered position from the last <see cref="AVPacket"/>
     /// that has been input into the decoder.
     /// </summary>

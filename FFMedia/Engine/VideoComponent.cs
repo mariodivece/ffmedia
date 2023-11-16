@@ -6,6 +6,6 @@ using System.Threading.Tasks;
 
 namespace FFMedia.Engine;
 
-internal class VideoComponent
+public class VideoComponent
 {
 }

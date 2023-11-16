@@ -11,7 +11,7 @@ namespace FFMedia.Primitives;
 public sealed class NativeReferenceTracker
 {
     private static readonly object SyncLock = new();
-    private static readonly SortedDictionary<ulong, (INativeTrackedReference obj, string? source)> Graph = new();
+    private static readonly SortedDictionary<ulong, (INativeTrackedReference obj, string? source)> Graph = [];
     private static ulong LastObjectId;
     private static ulong m_Count;
     private static readonly NativeReferenceTracker m_Instance = new();
@@ -37,8 +37,7 @@ public sealed class NativeReferenceTracker
     /// <returns>The acquired object id.</returns>
     public ulong Add(INativeTrackedReference item, string? source)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         lock (SyncLock)
         {
@@ -57,8 +56,7 @@ public sealed class NativeReferenceTracker
     /// <param name="item">The tracked reference to remove.</param>
     public void Remove(INativeTrackedReference item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         lock (SyncLock)
         {

@@ -7,35 +7,18 @@
 public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
     where TMedia : class, IMediaFrame
 {
-    /// <summary>
-    /// Port of VIDEO_PICTURE_QUEUE_SIZE.
-    /// </summary>
-    protected const int VideoQueueCapacity = 3;
-
-    /// <summary>
-    /// Port of SAMPLE_QUEUE_SIZE.
-    /// </summary>
-    protected const int AudioQueueCapacity = 9;
-
-    /// <summary>
-    /// Port of SUBPICTURE_QUEUE_SIZE.
-    /// </summary>
-    protected const int SubtitleQueueCapacity = 16;
-
-    /// <summary>
-    /// Port of FRAME_QUEUE_SIZE.
-    /// </summary>
-    protected static readonly int MaxQueueCapacity = Math.Max(Math.Max(VideoQueueCapacity, AudioQueueCapacity), SubtitleQueueCapacity);
 
     private long m_IsDisposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MediaComponentBase{TMedia}"/> class.
     /// </summary>
-    /// <param name="component">The associated component.</param>
-    protected MediaComponentBase(IMediaComponent<TMedia> component)
+    /// <param name="container">The associated container.</param>
+    protected MediaComponentBase(MediaContainer container)
     {
-        Component = component;
+        ArgumentNullException.ThrowIfNull(container);
+
+        Container = container;
 
         MediaType = typeof(TMedia).IsAssignableTo(typeof(IVideoFrame))
             ? AVMediaType.AVMEDIA_TYPE_VIDEO
@@ -47,18 +30,18 @@ public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
 
         var capacity = MediaType switch
         {
-            AVMediaType.AVMEDIA_TYPE_VIDEO => VideoQueueCapacity,
-            AVMediaType.AVMEDIA_TYPE_AUDIO => AudioQueueCapacity,
-            AVMediaType.AVMEDIA_TYPE_SUBTITLE => SubtitleQueueCapacity,
+            AVMediaType.AVMEDIA_TYPE_VIDEO => container.Options.VideoFramesCapacity,
+            AVMediaType.AVMEDIA_TYPE_AUDIO => container.Options.AudioFramesCapacity,
+            AVMediaType.AVMEDIA_TYPE_SUBTITLE => container.Options.SubtitleFramesCapacity,
             _ => throw new NotImplementedException()
         };
 
-        Frames = new(this, capacity);
+        Frames = new(this, Math.Min(capacity, container.Options.FramesMaxCapacity));
         Packets = new();
     }
 
     /// <inheritdoc />
-    public virtual IMediaComponent<TMedia> Component { get; }
+    public virtual MediaContainer Container { get; }
 
     /// <inheritdoc />
     public virtual AVMediaType MediaType { get; }

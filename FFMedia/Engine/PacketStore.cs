@@ -96,8 +96,8 @@ public sealed class PacketStore :
     /// </summary>
     public void Open()
     {
-        if (Interlocked.Read(ref m_IsDisposed) > 0)
-            throw new ObjectDisposedException(nameof(PacketStore));
+        ObjectDisposedException.ThrowIf(
+            Interlocked.Read(ref m_IsDisposed) > 0, this);
 
         IsClosed = false;
         this.EnqueueFlush();
@@ -126,8 +126,7 @@ public sealed class PacketStore :
     /// <returns>True when the operation succeeds. False otherwise.</returns>
     public bool Enqueue(FFPacket packet)
     {
-        if (packet is null)
-            throw new ArgumentNullException(nameof(packet));
+        ArgumentNullException.ThrowIfNull(packet);
 
         if (IsClosed)
         {

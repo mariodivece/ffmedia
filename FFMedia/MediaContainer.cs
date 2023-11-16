@@ -7,14 +7,15 @@
 /// </summary>
 public partial class MediaContainer : IDisposable
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MediaContainer"/> class.
-    /// </summary>
-    public MediaContainer()
+    internal MediaContainer(MediaOptions options)
     {
-        ServiceProperties = new(BuildServiceProperties, false);
-
+        Options = options;
     }
+
+    /// <summary>
+    /// Provides access to this container's configuration options.
+    /// </summary>
+    public MediaOptions Options { get; }
 
     public void Open()
     {

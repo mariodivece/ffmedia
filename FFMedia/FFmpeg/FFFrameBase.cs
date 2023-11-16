@@ -36,6 +36,9 @@ public unsafe abstract class FFFrameBase :
     }
 
     /// <inheritdoc />
+    public abstract AVMediaType MediaType { get; }
+
+    /// <inheritdoc />
     public long PacketPosition => Target->pkt_pos;
 
     /// <inheritdoc />

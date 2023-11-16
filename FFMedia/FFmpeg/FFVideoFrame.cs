@@ -36,6 +36,9 @@ public unsafe class FFVideoFrame :
     }
 
     /// <inheritdoc />
+    public override AVMediaType MediaType => AVMediaType.AVMEDIA_TYPE_VIDEO;
+
+    /// <inheritdoc />
     public nint BufferAddress => new(Target->data[0]);
 
     /// <inheritdoc />

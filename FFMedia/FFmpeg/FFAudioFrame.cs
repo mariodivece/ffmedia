@@ -37,6 +37,9 @@ public unsafe class FFAudioFrame :
     }
 
     /// <inheritdoc />
+    public override AVMediaType MediaType => AVMediaType.AVMEDIA_TYPE_AUDIO;
+
+    /// <inheritdoc />
     public AVSampleFormat SampleFormat => (AVSampleFormat)Target->format;
 
     /// <inheritdoc />

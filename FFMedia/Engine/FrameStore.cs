@@ -14,42 +14,67 @@ public partial class FrameStore<TMedia> :
     where TMedia : class, IMediaFrame
 {
     private readonly ExclusiveLock SyncLocker = new();
-    private readonly SortedFrameList Frames;
+    private readonly FrameGraph Frames;
 
-    private int m_Count;
     private long m_IsDisposed;
     private IDisposable? CurrentLock;
 
+    /// <summary>
+    /// Creates a new instance of the <see cref="FrameStore{TMedia}"/> class.
+    /// </summary>
+    /// <param name="component">The associated component.</param>
+    /// <param name="capacity">The maximum capacity.</param>
     public FrameStore(IMediaComponent<TMedia> component, int capacity)
     {
-        Frames = new(capacity);
+        ArgumentNullException.ThrowIfNull(component);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
+
+        Frames = new(this, capacity);
         Capacity = capacity;
         Component = component;
     }
 
-    public int Count
-    {
-        get => Interlocked.CompareExchange(ref m_Count, 0, 0);
-        set => Interlocked.Exchange(ref m_Count, value);
-    }
-
+    /// <summary>
+    /// Gets the maximum capacity of this <see cref="FrameStore{TMedia}"/>.
+    /// </summary>
     public int Capacity { get; }
 
-    public bool IsFull => Count >= Capacity;
-
+    /// <summary>
+    /// Gets the associated <see cref="IMediaComponent{TMedia}"/>.
+    /// </summary>
     public IMediaComponent<TMedia> Component { get; }
 
-    private bool IsDisposed => Interlocked.Read(ref m_IsDisposed) != 0;
-
+    /// <inheritdoc />
     public int GroupIndex => Component.GroupIndex;
 
-    public IFrameGraph<TMedia>? Lock(int timeoutMilliseconds = Timeout.Infinite)
-    {
-        if (IsDisposed)
-            return null;
+    /// <summary>
+    /// Gets a value indicating whether the <see cref="Dispose()"/> method has been called.
+    /// </summary>
+    private bool IsDisposed => Interlocked.Read(ref m_IsDisposed) != 0;
 
-        CurrentLock = SyncLocker.Lock(timeoutMilliseconds);
-        return CurrentLock is not null ? new FrameGraph(this) : null;
+    public IFrameGraph<TMedia>? Lock()
+    {
+        while (!IsDisposed)
+        {
+            var locker = SyncLocker.TryLock();
+            if (locker is not null)
+            {
+                CurrentLock = locker;
+                return PrepareFrameGraph();
+            }
+        }
+
+        return null;
+    }
+
+    private FrameGraph PrepareFrameGraph()
+    {
+        // TODO: If implemented by Frame store, write the pending frames
+        // TODO: clear frames not belonging to the group index
+        // TODO: Use a frame pool to return the frame
+        // TODO: Expose Frame graph interface members
+        Frames.GroupIndex = GroupIndex;
+        return Frames;
     }
 
     /// <inheritdoc />
@@ -70,15 +95,5 @@ public partial class FrameStore<TMedia> :
         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         Dispose(alsoManaged: true);
         GC.SuppressFinalize(this);
-    }
-
-    private class FrameSorter : IComparer<TMedia>
-    {
-        public int Compare(TMedia? x, TMedia? y)
-        {
-            var tx = x?.StartTime ?? TimeExtent.NaN;
-            var ty = y?.StartTime ?? TimeExtent.NaN;
-            return tx.CompareTo(ty);
-        }
     }
 }
