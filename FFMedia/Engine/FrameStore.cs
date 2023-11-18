@@ -10,15 +10,16 @@
 /// </summary>
 public partial class FrameStore<TMedia> :
     IDisposable,
-    ISerialGroupable
+    ISerialGroupable,
+    IComponentService<TMedia>
     where TMedia : class, IMediaFrame
 {
     private readonly ExclusiveLock SyncLocker = new();
     private readonly FrameGraph Frames;
 
-    private long m_IsDisposed;
     private IDisposable? CurrentLock;
-
+    private long m_IsDisposed;
+    
     /// <summary>
     /// Creates a new instance of the <see cref="FrameStore{TMedia}"/> class.
     /// </summary>
@@ -39,9 +40,7 @@ public partial class FrameStore<TMedia> :
     /// </summary>
     public int Capacity { get; }
 
-    /// <summary>
-    /// Gets the associated <see cref="IMediaComponent{TMedia}"/>.
-    /// </summary>
+    /// <inheritdoc />
     public IMediaComponent<TMedia> Component { get; }
 
     /// <inheritdoc />

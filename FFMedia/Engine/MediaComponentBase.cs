@@ -7,7 +7,6 @@
 public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
     where TMedia : class, IMediaFrame
 {
-
     private long m_IsDisposed;
 
     /// <summary>
@@ -61,7 +60,7 @@ public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
     /// <param name="alsoManaged">Includes managed resources.</param>
     protected virtual void Dispose(bool alsoManaged)
     {
-        if (Interlocked.Read(ref m_IsDisposed) > 1 || !alsoManaged)
+        if (Interlocked.Increment(ref m_IsDisposed) > 1 || !alsoManaged)
             return;
 
         Frames.Dispose();
