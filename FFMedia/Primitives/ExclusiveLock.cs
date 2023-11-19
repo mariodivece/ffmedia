@@ -131,7 +131,7 @@ public sealed class ExclusiveLock : IDisposable
     /// Implements the locks released.
     /// Dispose causes the necessary side-effects to the parent.
     /// </summary>
-    private class LockReleaser : IDisposable
+    private sealed class LockReleaser : IDisposable
     {
         private ExclusiveLock? Parent;
         private long m_IsDisposed;

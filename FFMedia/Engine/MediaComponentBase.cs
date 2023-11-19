@@ -1,4 +1,5 @@
-﻿namespace FFMedia.Engine;
+﻿
+namespace FFMedia.Engine;
 
 /// <summary>
 /// PRovides a base implementation of a media component.
@@ -8,16 +9,20 @@ public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
     where TMedia : class, IMediaFrame
 {
     private long m_IsDisposed;
+    private readonly IFramePool<TMedia> m_FramePool;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MediaComponentBase{TMedia}"/> class.
     /// </summary>
     /// <param name="container">The associated container.</param>
-    protected MediaComponentBase(MediaContainer container)
+    /// <param name="framePool">The frame pool service.</param>
+    protected MediaComponentBase(MediaContainer container, IFramePool<TMedia> framePool)
     {
         ArgumentNullException.ThrowIfNull(container);
+        ArgumentNullException.ThrowIfNull(framePool);
 
         Container = container;
+        m_FramePool = framePool;
 
         MediaType = typeof(TMedia).IsAssignableTo(typeof(IVideoFrame))
             ? AVMediaType.AVMEDIA_TYPE_VIDEO
@@ -53,6 +58,8 @@ public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
 
     /// <inheritdoc />
     public virtual int GroupIndex => Packets.GroupIndex;
+
+    IFramePool<TMedia> IMediaComponent<TMedia>.FramePool => m_FramePool;
 
     /// <summary>
     /// Releases unmanaged and optionaly unmanaged resources.

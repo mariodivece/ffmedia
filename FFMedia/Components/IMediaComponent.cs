@@ -29,4 +29,9 @@ public interface IMediaComponent<TMedia> :
     /// Provides access to the underlying <see cref="FrameStore{TMedia}"/>.
     /// </summary>
     FrameStore<TMedia> Frames { get; }
+
+    /// <summary>
+    /// PRovides access to the underlying <see cref="IFramePool{TMedia}"/>.
+    /// </summary>
+    IFramePool<TMedia> FramePool { get; }
 }

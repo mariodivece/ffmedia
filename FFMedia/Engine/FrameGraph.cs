@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 
 namespace FFMedia.Engine;
 
@@ -11,46 +12,58 @@ public partial class FrameStore<TMedia>
         private readonly SortedList<TimeExtent, TMedia> Frames = new(initialCapacity);
         private readonly FrameStore<TMedia> Parent = parent;
 
+        /// <inheritdoc />
         public TMedia this[int index]
         {
             get => Frames.GetValueAtIndex(index);
             set => throw new NotSupportedException($"Setting an item at an index of this graph defeats its purpose.");
         }
 
+        /// <inheritdoc />
         public IMediaComponent<TMedia> Component => Parent.Component;
 
+        /// <inheritdoc />
         public int Count => Frames.Count;
 
+        /// <inheritdoc />
         public bool IsFull => Frames.Count >= Parent.Capacity;
 
+        /// <inheritdoc />
         public bool IsReadOnly => false;
 
+        /// <inheritdoc />
         public bool IsEmpty => Frames.Count <= 0;
 
+        /// <inheritdoc />
         public int MinIndex => IsEmpty ? -1 : 0;
 
+        /// <inheritdoc />
         public int MaxIndex => Frames.Count - 1;
 
-        public TimeExtent MinStartTime => IsEmpty
-            ? TimeExtent.Zero
-            : Frames[MinIndex].StartTime;
-
+        /// <inheritdoc />
         public TimeExtent MaxStartTime => IsEmpty
-            ? TimeExtent.Zero
+            ? TimeExtent.NaN
             : Frames[MaxIndex].StartTime;
 
-        public TimeExtent RangeStartTime => MinStartTime;
+        /// <inheritdoc />
+        public TimeExtent RangeStartTime => IsEmpty
+            ? TimeExtent.NaN
+            : Frames[MinIndex].StartTime;
 
+        /// <inheritdoc />
         public TimeExtent RangeEndTime => IsEmpty
-            ? TimeExtent.Zero
+            ? TimeExtent.NaN
             : Frames[MaxIndex].StartTime + Frames[MaxIndex].Duration;
 
+        /// <inheritdoc />
         public TimeExtent TotalDuration => IsEmpty
             ? TimeExtent.Zero
             : RangeEndTime - RangeStartTime;
 
+        /// <inheritdoc />
         public int GroupIndex { get; set; }
 
+        /// <inheritdoc />
         public void Add(TMedia item)
         {
             ArgumentNullException.ThrowIfNull(item);
@@ -67,42 +80,54 @@ public partial class FrameStore<TMedia>
             if (Frames.ContainsKey(item.StartTime))
                 throw new ArgumentException($"An {nameof(item)} with the same {nameof(item.StartTime)} is already contained in the set.");
 
+            // Automatically make room for the new frame.
+            if (IsFull)
+            {
+                var relativePosition = FindRelativePosition(item);
+                if (relativePosition < 0.5)
+                    RemoveLast();
+                else
+                    RemoveFirst();
+            }
+
             Frames.Add(item.StartTime, item);
         }
 
-        public void Clear() => Frames.Clear();
+        /// <inheritdoc />
+        public void Clear()
+        {
+            while (Frames.Count > 0)
+                RemoveAt(0);
+        }
 
+        /// <inheritdoc />
         public bool Contains(TMedia item) => Frames.ContainsValue(item);
 
+        /// <inheritdoc />
         public bool Contains(TimeExtent time) => !time.IsNaN && !IsEmpty &&
             time >= RangeStartTime && time <= RangeEndTime;
 
+        /// <inheritdoc />
         public void CopyTo(TMedia[] array, int arrayIndex) => Frames.Values.CopyTo(array, arrayIndex);
 
+        /// <inheritdoc />
         public IEnumerator<TMedia> GetEnumerator() => Frames.Values.GetEnumerator();
 
+        /// <inheritdoc />
         public int IndexOf(TMedia item) => Frames.IndexOfValue(item);
 
+        /// <inheritdoc />
         public void Insert(int index, TMedia item) =>
             throw new NotSupportedException($"Inserting an item at an index of this graph defeats its purpose.");
 
+        /// <inheritdoc />
         public bool Remove(TMedia item)
         {
             var index = Frames.IndexOfValue(item);
             if (index < 0)
                 return false;
 
-            Frames.RemoveAt(index);
-            return true;
-        }
-
-        public bool Remove(TimeExtent startTime)
-        {
-            var index = FindFrameIndex(startTime);
-            if (index < 0)
-                return false;
-
-            Frames.RemoveAt(index);
+            RemoveAt(index);
             return true;
         }
 
@@ -124,10 +149,18 @@ public partial class FrameStore<TMedia>
             return true;
         }
 
-        public void RemoveAt(int index) => Frames.RemoveAt(index);
+        /// <inheritdoc />
+        public void RemoveAt(int index)
+        {
+            var frame = Frames[index];
+            Component.FramePool.ReturnFrameLease(frame);
+            Frames.RemoveAt(index);
+        }
 
+        /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator() => Frames.Values.GetEnumerator();
 
+        /// <inheritdoc />
         public TMedia? FindFrame(TimeExtent startTime)
         {
             var index = FindFrameIndex(startTime);
@@ -136,6 +169,7 @@ public partial class FrameStore<TMedia>
                 : Frames[index];
         }
 
+        /// <inheritdoc />
         public int FindFrameIndex(TimeExtent startTime)
         {
             if (IsEmpty || startTime.IsNaN)
@@ -154,15 +188,20 @@ public partial class FrameStore<TMedia>
             return frameIndex;
         }
 
+        /// <inheritdoc />
         public double FindRelativePosition(TimeExtent time)
         {
             if (IsEmpty)
                 return 0;
 
-            var timeOffset = (time - MinStartTime).Milliseconds;
+            if (time.IsNaN)
+                throw new ArgumentException($"{nameof(time)} has to be finite.");
+
+            var timeOffset = (time - RangeStartTime).Milliseconds;
             return timeOffset / TotalDuration.Milliseconds;
         }
 
+        /// <inheritdoc />
         public double FindRelativePosition(TMedia item)
         {
             ArgumentNullException.ThrowIfNull(item);
@@ -177,10 +216,6 @@ public partial class FrameStore<TMedia>
         }
 
         /// <inheritdoc />
-        public void Dispose()
-        {
-            Parent.CurrentLock?.Dispose();
-            Parent.CurrentLock = null;
-        }
+        public void Dispose() => Parent.Unlock();
     }
 }

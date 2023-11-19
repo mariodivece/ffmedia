@@ -1,6 +1,5 @@
 ﻿namespace FFMedia.Engine;
 
-
 /// <summary>
 /// Represents a queue-style data structure used to read and write media frames.
 /// Internally, it is implemented with 2 queues. One with readable frames and
@@ -51,14 +50,23 @@ public partial class FrameStore<TMedia> :
     /// </summary>
     private bool IsDisposed => Interlocked.Read(ref m_IsDisposed) != 0;
 
+    /// <summary>
+    /// Locks this <see cref="FrameStore{TMedia}"/> and returns
+    /// the stored frames as a <see cref="IFrameGraph{TMedia}"/>
+    /// for exclusive reading and writing. This is a tight blovking operation
+    /// and the only way this returns null is if <see cref="Dispose()"/>
+    /// is called by someone else.
+    /// </summary>
+    /// <returns>The locked frame graph.</returns>
     public IFrameGraph<TMedia>? Lock()
     {
+        IDisposable? currentLock;
         while (!IsDisposed)
         {
-            var locker = SyncLocker.TryLock();
-            if (locker is not null)
+            currentLock = SyncLocker.TryLock();
+            if (currentLock is not null)
             {
-                CurrentLock = locker;
+                CurrentLock = currentLock;
                 return PrepareFrameGraph();
             }
         }
@@ -68,12 +76,22 @@ public partial class FrameStore<TMedia> :
 
     private FrameGraph PrepareFrameGraph()
     {
-        // TODO: If implemented by Frame store, write the pending frames
-        // TODO: clear frames not belonging to the group index
-        // TODO: Use a frame pool to return the frame
-        // TODO: Expose Frame graph interface members
         Frames.GroupIndex = GroupIndex;
+
+        // Remove frames not belonging to the current group index
+        for (var i = Frames.Count - 1; i >= 0; i--)
+        {
+            if (Frames[i].GroupIndex != GroupIndex)
+                Frames.RemoveAt(i);
+        }
+
         return Frames;
+    }
+
+    private void Unlock()
+    {
+        CurrentLock?.Dispose();
+        CurrentLock = null;
     }
 
     /// <inheritdoc />
@@ -86,6 +104,7 @@ public partial class FrameStore<TMedia> :
         CurrentLock?.Dispose();
         SyncLocker.Dispose();
         CurrentLock = null;
+        Frames.Clear();
     }
 
     /// <inheritdoc />
