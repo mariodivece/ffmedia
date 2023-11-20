@@ -28,5 +28,9 @@ internal static class NativeExtensions
         return Encoding.UTF8.GetString(byteSpan);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe string? ReadString(void* target) =>
+        ReadString(new nint(target));
+
     public static bool ToBool(this int value) => value != 0;
 }

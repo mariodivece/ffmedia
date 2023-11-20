@@ -23,11 +23,11 @@ internal static unsafe class WaveExtensions
     {
 #pragma warning disable CA2014 // Do not use stackalloc in loops: This is fine because the loop only retries once.
 
-        const int OutputMaxLength = 2048;
-        var currentAlloc = OutputMaxLength;
-        var requestedAlloc = OutputMaxLength + 1;
+        const int BufferSize = 2048;
+        var currentAlloc = BufferSize;
+        var requestedAlloc = BufferSize;
 
-        while (currentAlloc < requestedAlloc)
+        while (currentAlloc <= requestedAlloc)
         {
             var output = stackalloc byte[currentAlloc];
             requestedAlloc = ffmpeg.av_channel_layout_describe(&layout, output, (ulong)currentAlloc);
