@@ -9,7 +9,6 @@ public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
     where TMedia : class, IMediaFrame
 {
     private long m_IsDisposed;
-    private readonly IFramePool<TMedia> m_FramePool;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MediaComponentBase{TMedia}"/> class.
@@ -22,7 +21,7 @@ public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
         ArgumentNullException.ThrowIfNull(framePool);
 
         Container = container;
-        m_FramePool = framePool;
+        FramePool = framePool;
 
         MediaType = typeof(TMedia).IsAssignableTo(typeof(IVideoFrame))
             ? AVMediaType.AVMEDIA_TYPE_VIDEO
@@ -59,7 +58,8 @@ public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
     /// <inheritdoc />
     public virtual int GroupIndex => Packets.GroupIndex;
 
-    IFramePool<TMedia> IMediaComponent<TMedia>.FramePool => m_FramePool;
+    /// <inheritdoc />
+    public IFramePool<TMedia> FramePool { get; }
 
     /// <summary>
     /// Releases unmanaged and optionaly unmanaged resources.
