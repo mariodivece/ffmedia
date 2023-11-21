@@ -15,22 +15,14 @@ internal unsafe class Program
         FFmpegBindings.LibrariesPath = @"C:\ffmpeg\x64\";
         FFmpegBindings.Initialize();
 
-        var options = FFMediaClass.Format.Options;
-        var fp = FFMediaClass.Format.FindOption("max_ts_probe", true);
-        var fp2 = options.FirstOrDefault(o => o.Name == "max_ts_probe");
+        var avclass = FFMediaClass.Scaler;
+        var optionName = "srcw";
 
-        var format = ffmpeg.avformat_alloc_context();
-
-        var mediaClass = new FFMediaClass(format->av_class);
-
-        var setResult = ffmpeg.av_opt_set(format->priv_data, "max_ts_probe", "1", 0);
-
-        var mcOpts = mediaClass.Options;
-        var mcChildren = mediaClass.Children;
-
+        var options = avclass.Options;
+        var findOption = avclass.FindOption(optionName, true);
+        var lookOption = options.FirstOrDefault(o => o.Name == optionName);
 
         Console.WriteLine($"Result: {Result}");
-        ffmpeg.avformat_free_context(format);
     }
 
     private static void TaskBody(ExclusiveLock exclusive, string name)
