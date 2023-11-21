@@ -42,4 +42,5 @@ public unsafe sealed class FFOption(AVOption* target) :
     /// Gets the maximum valid value for the option
     /// </summary>
     public double MaxValue => Target->min;
+
 }

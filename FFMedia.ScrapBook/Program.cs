@@ -1,4 +1,5 @@
 ﻿using FFMedia.Primitives;
+using FFmpeg;
 using System.Diagnostics;
 using FFmpegBindings = FFmpeg.AutoGen.Bindings.DynamicallyLoaded.DynamicallyLoadedBindings;
 
@@ -12,6 +13,10 @@ internal class Program
     {
         FFmpegBindings.LibrariesPath = @"C:\ffmpeg\x64\";
         FFmpegBindings.Initialize();
+
+        var options = FFMediaClass.Format.Options;
+        var fp = FFMediaClass.Format.FindOption("metadata_header_padding", true);
+        var fp2 = options.FirstOrDefault(o => o.Name == "metadata_header_padding");
 
         Console.WriteLine($"Result: {Result}");
     }

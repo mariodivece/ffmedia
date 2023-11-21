@@ -32,5 +32,10 @@ internal static class NativeExtensions
     public static unsafe string? ReadString(void* target) =>
         ReadString(new nint(target));
 
+    /// <summary>
+    /// Converts any non-zero integer to a boolean.
+    /// </summary>
+    /// <param name="value">The integer to convert to a boolean.</param>
+    /// <returns>The boolean value.</returns>
     public static bool ToBool(this int value) => value != 0;
 }
