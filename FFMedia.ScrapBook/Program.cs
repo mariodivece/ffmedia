@@ -1,11 +1,12 @@
 ﻿using FFMedia.Primitives;
 using FFmpeg;
+using FFmpeg.AutoGen.Abstractions;
 using System.Diagnostics;
 using FFmpegBindings = FFmpeg.AutoGen.Bindings.DynamicallyLoaded.DynamicallyLoadedBindings;
 
 namespace FFMedia.ScrapBook;
 
-internal class Program
+internal unsafe class Program
 {
     private static int Result = 0;
 
@@ -15,10 +16,21 @@ internal class Program
         FFmpegBindings.Initialize();
 
         var options = FFMediaClass.Format.Options;
-        var fp = FFMediaClass.Format.FindOption("metadata_header_padding", true);
-        var fp2 = options.FirstOrDefault(o => o.Name == "metadata_header_padding");
+        var fp = FFMediaClass.Format.FindOption("max_ts_probe", true);
+        var fp2 = options.FirstOrDefault(o => o.Name == "max_ts_probe");
+
+        var format = ffmpeg.avformat_alloc_context();
+
+        var mediaClass = new FFMediaClass(format->av_class);
+
+        var setResult = ffmpeg.av_opt_set(format->priv_data, "max_ts_probe", "1", 0);
+
+        var mcOpts = mediaClass.Options;
+        var mcChildren = mediaClass.Children;
+
 
         Console.WriteLine($"Result: {Result}");
+        ffmpeg.avformat_free_context(format);
     }
 
     private static void TaskBody(ExclusiveLock exclusive, string name)

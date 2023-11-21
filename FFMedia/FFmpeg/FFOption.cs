@@ -43,4 +43,11 @@ public unsafe sealed class FFOption(AVOption* target) :
     /// </summary>
     public double MaxValue => Target->min;
 
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return IsEmpty 
+            ? $"{nameof(AVOption)}* null" 
+            : $"{Name} ({Type.ToString().Replace("AV_OPT_TYPE_", string.Empty, StringComparison.Ordinal)}, {Unit}): {Help}";
+    }
 }

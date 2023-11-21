@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace FFmpeg;
+﻿namespace FFmpeg;
 
 /// <summary>
 /// Provides a wrapper for the <see cref="AVClass"/> structure.
@@ -37,27 +35,29 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     /// </summary>
     public static FFMediaClass Resampler { get; } = new(ffmpeg.swr_get_class());
 
-    //public IReadOnlyList<FFMediaClass> Children
-    //{
-    //    get
-    //    {
-    //        var childrenIteratorPointer = Target->child_next.Pointer;
-    //        if (childrenIteratorPointer == IntPtr.Zero)
-    //            return [];
+    /// <summary>
+    /// Gets the child media classes.
+    /// </summary>
+    public IReadOnlyList<FFMediaClass> Children
+    {
+        get
+        {
+            var result = new List<FFMediaClass>();
+            void* iterator = null;
 
-    //        var childrenIterator = Marshal
-    //            .GetDelegateForFunctionPointer<AVClass_child_next>(childrenIteratorPointer);
+            AVClass* currentChild;
+            do
+            {
+                currentChild = ffmpeg.av_opt_child_class_iterate(Target, &iterator);
 
-    //        AVClass* currentChild = null;
+                if (currentChild is not null)
+                    result.Add(new(currentChild));
 
-    //        do
-    //        {
-    //            currentChild = (AVClass*)childrenIterator((void*)Target, (void*)currentChild);
-    //        }
+            } while (currentChild is not null);
 
-            
-    //    }
-    //}
+            return result;
+        }
+    }
 
     /// <summary>
     /// Enumerates all the options for this <see cref="FFMediaClass"/>.
@@ -66,19 +66,17 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     {
         get
         {
-            
-            var n = Format.Target->child_next;
-            var nextChild = Marshal.GetDelegateForFunctionPointer<AVClass_child_next>(n.Pointer);
-            var child = new FFMediaClass((AVClass*)nextChild(Format.Target, null));
-
             var options = new List<FFOption>();
-            var targetPointer = Target;
+
+            // since we are searching for a 'fake' object (i.e. static struct, we need to pass a double pointer
+            // per the documentation of the av_opt_find method call.
+            var target = Target;
 
             AVOption* currentOption = null;
             do
             {
-                currentOption = ffmpeg.av_opt_next(&targetPointer, currentOption);
-                if (currentOption is not null)
+                currentOption = ffmpeg.av_opt_next(&target, currentOption);
+                if (currentOption is not null && currentOption->name is not null)
                     options.Add(new(currentOption));
 
             } while (currentOption is not null);
@@ -92,19 +90,20 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     /// <param name="optionName">The name of the option to search for.</param>
     /// <param name="searchChildren">Whether to search for the option in child objects.</param>
     /// <returns>The the option if it is found. Null otherwise.</returns>
-    /// <remarks>Port of cmdutils.c opt_find.</remarks>
+    /// <remarks>Port of cmdutils.c/opt_find and based on libavutil/opt.c.</remarks>
     public FFOption? FindOption(string optionName, bool searchChildren)
     {
         if (Target is null)
             return default;
 
-        var searchFlags = ffmpeg.AV_OPT_SEARCH_FAKE_OBJ | (searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : 0);
+        var searchFlags =
+            ffmpeg.AV_OPT_SEARCH_FAKE_OBJ |
+            (searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : 0);
 
-        // since we are searching fot a face object (i.e. static struct, we need to pass a double pointer
+        // since we are searching for a 'fake' object (i.e. static struct), we need to pass a double pointer
         // per the documentation of the av_opt_find method call.
-        var targetPointer = Target;
-
-        var option = ffmpeg.av_opt_find(&targetPointer, optionName, null, 0, searchFlags);
+        var target = Target;
+        var option = ffmpeg.av_opt_find(&target, optionName, null, 0, searchFlags);
 
         // we ensure that the method call returned an actual option and that
         // its flags are non-zero (i.e. has flags set).
@@ -112,7 +111,6 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
             ? new(option)
             : default;
     }
-
 
     /// <summary>
     /// Checks whether an option with the specified name exists.
