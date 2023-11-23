@@ -83,7 +83,7 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     /// <summary>
     /// Gesta  value indicating whether 
     /// </summary>
-    public bool HasData => !IsEmpty && Data is not null;
+    public bool HasData => !IsNull && Data is not null;
 
     /// <summary>
     /// Gets the presentation timestamp in <see cref="AVStream.time_base"/> units.

@@ -20,9 +20,9 @@ public interface INativeReference
 
     /// <summary>
     /// Gets a value indicating whether this instance no
-    /// longer points to a valid <see cref="Address"/>
+    /// points to a non-zero <see cref="Address"/>
     /// </summary>
-    bool IsEmpty { get; }
+    bool IsNull { get; }
 }
 
 /// <summary>

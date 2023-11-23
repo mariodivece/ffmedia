@@ -66,7 +66,7 @@ public abstract unsafe class NativeTrackedReferenceBase<T> : NativeReferenceBase
         if (!alsoManaged)
             return;
 
-        if (!IsEmpty)
+        if (!IsNull)
             ReleaseInternal(Target);
 
         Update(IntPtr.Zero);

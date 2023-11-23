@@ -2,7 +2,7 @@
 
 namespace FFMedia.Extensions;
 
-internal static class NativeExtensions
+internal static unsafe class NativeExtensions
 {
     /// <summary>
     /// Given a buffer address, read a series of UTF8 characters
@@ -38,4 +38,7 @@ internal static class NativeExtensions
     /// <param name="value">The integer to convert to a boolean.</param>
     /// <returns>The boolean value.</returns>
     public static bool ToBool(this int value) => value != 0;
+
+    public static void* ToPointer(this INativeReference nativeReference) =>
+        nativeReference.IsNull ? null : nativeReference.Address.ToPointer();
 }

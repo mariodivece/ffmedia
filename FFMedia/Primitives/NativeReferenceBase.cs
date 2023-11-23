@@ -31,13 +31,13 @@ public abstract unsafe class NativeReferenceBase<T> : INativeReference<T>
     public nint Address { get; protected set; }
 
     /// <inheritdoc />
-    public T* Target => IsEmpty ? null : (T*)Address;
+    public T* Target => IsNull ? null : (T*)Address;
 
     /// <inheritdoc />
-    public T Value => IsEmpty ? default : *Target;
+    public T Value => IsNull ? default : *Target;
 
     /// <inheritdoc />
-    public bool IsEmpty => Address == 0;
+    public bool IsNull => Address == 0;
 
     /// <inheritdoc />
     public int StructureSize => sizeof(T);

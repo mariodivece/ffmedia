@@ -1,6 +1,5 @@
 ﻿using FFMedia.Primitives;
 using FFmpeg;
-using FFmpeg.AutoGen.Abstractions;
 using System.Diagnostics;
 using FFmpegBindings = FFmpeg.AutoGen.Bindings.DynamicallyLoaded.DynamicallyLoadedBindings;
 

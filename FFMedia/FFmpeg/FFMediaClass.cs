@@ -5,7 +5,8 @@
 /// </summary>
 /// <param name="target">The target to wrap.</param>
 public unsafe sealed class FFMediaClass(AVClass* target) :
-    NativeReferenceBase<AVClass>(target)
+    NativeReferenceBase<AVClass>(target),
+    IFFOptionsDefined
 {
     /// <summary>
     /// Gets the <see cref="AVClass"/> for <see cref="AVCodecContext"/>.
@@ -35,14 +36,12 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     /// </summary>
     public static FFMediaClass Resampler { get; } = new(ffmpeg.swr_get_class());
 
-    /// <summary>
-    /// Gets the child media classes.
-    /// </summary>
-    public IReadOnlyList<FFMediaClass> Children
+    /// <inheritdoc />
+    public IReadOnlyList<IFFOptionsDefined> Children
     {
         get
         {
-            var result = new List<FFMediaClass>();
+            var result = new List<IFFOptionsDefined>();
             void* iterator = null;
 
             AVClass* currentChild;
@@ -51,7 +50,7 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
                 currentChild = ffmpeg.av_opt_child_class_iterate(Target, &iterator);
 
                 if (currentChild is not null)
-                    result.Add(new(currentChild));
+                    result.Add(new FFMediaClass(currentChild));
 
             } while (currentChild is not null);
 
@@ -59,9 +58,7 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
         }
     }
 
-    /// <summary>
-    /// Enumerates all the options for this <see cref="FFMediaClass"/>.
-    /// </summary>
+    /// <inheritdoc />
     public IReadOnlyList<FFOption> Options
     {
         get
@@ -84,13 +81,7 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
         }
     }
 
-    /// <summary>
-    /// Attempts to find an option with the specified name.
-    /// </summary>
-    /// <param name="optionName">The name of the option to search for.</param>
-    /// <param name="searchChildren">Whether to search for the option in child objects.</param>
-    /// <returns>The the option if it is found. Null otherwise.</returns>
-    /// <remarks>Port of cmdutils.c/opt_find and based on libavutil/opt.c.</remarks>
+    /// <inheritdoc />
     public FFOption? FindOption(string optionName, bool searchChildren)
     {
         if (Target is null)
@@ -112,12 +103,7 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
             : default;
     }
 
-    /// <summary>
-    /// Checks whether an option with the specified name exists.
-    /// </summary>
-    /// <param name="optionName">The name of the option to search for.</param>
-    /// <param name="searchChildren">Whether to search for the option in child objects.</param>
-    /// <returns>True if the option is found. False otherwise.</returns>
+    /// <inheritdoc />
     public bool HasOption(string optionName, bool searchChildren) =>
         FindOption(optionName, searchChildren) is not null;
 
