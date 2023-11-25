@@ -8,15 +8,9 @@
 /// </remarks>
 /// <param name="target">The target to wrap.</param>
 public unsafe sealed class FFInputFormat(AVInputFormat* target) :
-    NativeReferenceBase<AVInputFormat>(target),
-    IFFOptionsStorage
+    NativeReferenceBase<AVInputFormat>(target)
 {
     private const StringSplitOptions SplitOptions = StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries;
-
-    public void x()
-    {
-        this.Target->cl
-    }
 
     /// <summary>
     /// Gets the flags. Also see <see cref="AVInputFormat.flags"/>.

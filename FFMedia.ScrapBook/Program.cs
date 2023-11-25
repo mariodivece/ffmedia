@@ -1,6 +1,9 @@
-﻿using FFMedia.Primitives;
+﻿using FFMedia.FFmpeg;
+using FFMedia.Primitives;
 using FFmpeg;
+using FFmpeg.AutoGen.Abstractions;
 using System.Diagnostics;
+using System.Reflection;
 using FFmpegBindings = FFmpeg.AutoGen.Bindings.DynamicallyLoaded.DynamicallyLoadedBindings;
 
 namespace FFMedia.ScrapBook;
@@ -14,12 +17,10 @@ internal unsafe class Program
         FFmpegBindings.LibrariesPath = @"C:\ffmpeg\x64\";
         FFmpegBindings.Initialize();
 
-        var avclass = FFMediaClass.Scaler;
-        var optionName = "srcw";
+        var n = FFMediaClass.Format;
 
-        var options = avclass.Options;
-        var findOption = avclass.FindOption(optionName, true);
-        var lookOption = options.FirstOrDefault(o => o.Name == optionName);
+        using var context = new DummyContext();
+        var m = context.MediaClass;
 
         Console.WriteLine($"Result: {Result}");
     }
@@ -59,5 +60,36 @@ internal unsafe class Program
         }
 
         Console.WriteLine($"{name,-16} Entry: {entryCount,8}, Deny: {denyCount,8} ");
+    }
+}
+
+public unsafe class DummyContext : NativeTrackedReferenceBase<AVCodecContext>
+{
+    public DummyContext()
+        : base(null, null)
+    {
+        void* iterator = null;
+        var codec = ffmpeg.av_codec_iterate(&iterator);
+        var inputContext = ffmpeg.avcodec_alloc_context3(codec);
+
+        Update(inputContext);
+    }
+
+    public FFMediaClass MediaClass
+    {
+        get
+        {
+            var wantePtr = new nint(Target->av_class);
+            var resolvedPtr = (nint)((void**)Target);
+            return new(Target->av_class);
+        }
+
+    }
+
+    public FFOptionsObject? Options => FFOptionsObject.TryWrap(this, out var options) ? options : null;
+
+    protected override unsafe void ReleaseInternal(AVCodecContext* target)
+    {
+        ffmpeg.avcodec_free_context(&target);
     }
 }

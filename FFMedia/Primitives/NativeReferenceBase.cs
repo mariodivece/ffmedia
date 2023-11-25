@@ -6,7 +6,9 @@
 /// interface.
 /// </summary>
 /// <typeparam name="T">The unmanaged type to wrap.</typeparam>
-public abstract unsafe class NativeReferenceBase<T> : INativeReference<T>
+public abstract unsafe class NativeReferenceBase<T> :
+    NativeReference,
+    INativeReference<T>
     where T : unmanaged
 {
     /// <summary>
@@ -14,21 +16,20 @@ public abstract unsafe class NativeReferenceBase<T> : INativeReference<T>
     /// </summary>
     /// <param name="target">The data structure to wrap.</param>
     protected NativeReferenceBase(T* target)
-    {
-        Update(target);
-    }
-
-    /// <summary>
-    /// Initializes a new, empty instance of the <see cref="NativeReferenceBase{T}"/> class.
-    /// You can the call the <see cref="Update(nint)"/> method to provide access to the reference.
-    /// </summary>
-    protected NativeReferenceBase()
+        : base(target)
     {
         // placeholder
     }
 
-    /// <inheritdoc />
-    public nint Address { get; protected set; }
+    /// <summary>
+    /// Initializes a new, empty instance of the <see cref="NativeReferenceBase{T}"/> class.
+    /// You can the call the <see cref="INativeReference.Update(nint)"/> method to provide access to the reference.
+    /// </summary>
+    protected NativeReferenceBase()
+        : base(IntPtr.Zero)
+    {
+        // placeholder
+    }
 
     /// <inheritdoc />
     public T* Target => IsNull ? null : (T*)Address;
@@ -37,16 +38,10 @@ public abstract unsafe class NativeReferenceBase<T> : INativeReference<T>
     public T Value => IsNull ? default : *Target;
 
     /// <inheritdoc />
-    public bool IsNull => Address == 0;
-
-    /// <inheritdoc />
     public int StructureSize => sizeof(T);
 
     /// <inheritdoc />
-    public void Update(nint address) => Address = address;
-
-    /// <inheritdoc />
-    public void Update(T* target) => Address = target is null
+    public void Update(T* target) => Update(target is null
         ? default
-        : new(target);
+        : new nint(target));
 }
