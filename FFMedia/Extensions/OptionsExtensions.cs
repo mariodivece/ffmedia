@@ -10,7 +10,7 @@ public static unsafe class OptionsExtensions
             return false;
 
         var searchFlags = (searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : 0);
-        var avoption = ffmpeg.av_opt_find(store.Address.ToPointer(), optionName, null, 0, searchFlags);
+        var avoption = ffmpeg.av_opt_find(store.ToPointer(), optionName, null, 0, searchFlags);
         if (avoption is not null)
         {
             option = new(avoption);
@@ -30,7 +30,7 @@ public static unsafe class OptionsExtensions
         ArgumentException.ThrowIfNullOrWhiteSpace(optionName, nameof(optionName));
 
         var searchFlags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : default;
-        var resultCode = ffmpeg.av_opt_set(store.Address.ToPointer(), optionName, value, searchFlags);
+        var resultCode = ffmpeg.av_opt_set(store.ToPointer(), optionName, value, searchFlags);
         FFException.ThrowIfNegative(resultCode, $"Failed to set option value for '{optionName}'.");
     }
 
@@ -40,7 +40,7 @@ public static unsafe class OptionsExtensions
             return false;
 
         var searchFlags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : default;
-        var resultCode = ffmpeg.av_opt_set(store.Address.ToPointer(), optionName, value, searchFlags);
+        var resultCode = ffmpeg.av_opt_set(store.ToPointer(), optionName, value, searchFlags);
         return resultCode == 0;
     }
 
@@ -52,7 +52,7 @@ public static unsafe class OptionsExtensions
 
         byte* stringValuePointer;
         var searchFlags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : default;
-        var resultCode = ffmpeg.av_opt_get(store.Address.ToPointer(), optionName, searchFlags, &stringValuePointer);
+        var resultCode = ffmpeg.av_opt_get(store.ToPointer(), optionName, searchFlags, &stringValuePointer);
 
         FFException.ThrowIfNegative(resultCode, $"Failed to get option value for '{optionName}'.");
         return NativeExtensions.ReadString(stringValuePointer) ?? string.Empty;
@@ -67,7 +67,7 @@ public static unsafe class OptionsExtensions
 
         byte* stringValuePointer;
         var searchFlags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : default;
-        var resultCode = ffmpeg.av_opt_get(store.Address.ToPointer(), optionName, searchFlags, &stringValuePointer);
+        var resultCode = ffmpeg.av_opt_get(store.ToPointer(), optionName, searchFlags, &stringValuePointer);
 
         if (resultCode == 0)
         {

@@ -101,7 +101,7 @@ public sealed unsafe class FFOptionsStore :
         if (!CheckIsAVOptionsEnabled<T>())
             return false;
 
-        optionsObject = new(obj.Address.ToPointer());
+        optionsObject = new(obj.ToPointer());
         return true;
     }
 

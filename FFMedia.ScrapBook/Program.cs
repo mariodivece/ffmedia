@@ -3,8 +3,6 @@ using FFMedia.Primitives;
 using FFmpeg;
 using FFmpeg.AutoGen.Abstractions;
 using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.InteropServices.ObjectiveC;
 using FFmpegBindings = FFmpeg.AutoGen.Bindings.DynamicallyLoaded.DynamicallyLoadedBindings;
 
 namespace FFMedia.ScrapBook;

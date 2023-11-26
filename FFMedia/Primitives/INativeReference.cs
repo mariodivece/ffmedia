@@ -5,7 +5,7 @@
 /// wraps a data structure that resides in unmanaged
 /// memory.
 /// </summary>
-public interface INativeReference
+public unsafe interface INativeReference
 {
     /// <summary>
     /// Gets the pointer address of the unmanaged data structure.
@@ -33,11 +33,6 @@ public interface INativeReference
 public unsafe interface INativeReference<T> : INativeReference
     where T : unmanaged
 {
-    /// <summary>
-    /// Gets a pointer reference to the wrapped data structure.
-    /// </summary>
-    T* Target { get; }
-
     /// <summary>
     /// Updates the pointer to the specified target.
     /// </summary>

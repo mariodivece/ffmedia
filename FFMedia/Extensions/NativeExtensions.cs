@@ -1,5 +1,4 @@
-﻿using System.Collections.Frozen;
-using System.Text;
+﻿using System.Text;
 
 namespace FFMedia.Extensions;
 
@@ -38,12 +37,32 @@ internal static unsafe class NativeExtensions
     /// </summary>
     /// <param name="value">The integer to convert to a boolean.</param>
     /// <returns>The boolean value.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool ToBool(this int value) => value != 0;
 
+    /// <summary>
+    /// Gets a generic void pointer based on the given native reference.
+    /// The pointer is derived from <see cref="INativeReference.Address"/>.
+    /// </summary>
+    /// <param name="nativeReference">The native reference wrapper.</param>
+    /// <returns>The pointer.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void* ToPointer(this INativeReference nativeReference) =>
-        nativeReference.IsNull ? null : nativeReference.Address.ToPointer();
+        nativeReference is null || nativeReference.IsNull
+        ? null
+        : nativeReference.Address.ToPointer();
 
-
+    /// <summary>
+    /// Reads an array of consecutive items of the given
+    /// type at the starting address and until a value with
+    /// the termination value is found. The item with the termination
+    /// value is not included in the resulting list.
+    /// </summary>
+    /// <typeparam name="T">The type of elements.</typeparam>
+    /// <param name="firstItem">The pointer to the first item.</param>
+    /// <param name="terminationValue">The value of the end of the array.</param>
+    /// <returns>A list of the items that was read from memory.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static IReadOnlyList<T> ExtractArray<T>(T* firstItem, T terminationValue)
         where T : unmanaged
     {
