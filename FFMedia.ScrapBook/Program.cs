@@ -4,6 +4,7 @@ using FFmpeg;
 using FFmpeg.AutoGen.Abstractions;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices.ObjectiveC;
 using FFmpegBindings = FFmpeg.AutoGen.Bindings.DynamicallyLoaded.DynamicallyLoadedBindings;
 
 namespace FFMedia.ScrapBook;
@@ -20,7 +21,7 @@ internal unsafe class Program
         var n = FFMediaClass.Format;
 
         using var context = new DummyContext();
-        var m = context.MediaClass;
+
 
         Console.WriteLine($"Result: {Result}");
     }
@@ -68,25 +69,14 @@ public unsafe class DummyContext : NativeTrackedReferenceBase<AVCodecContext>
     public DummyContext()
         : base(null, null)
     {
-        void* iterator = null;
-        var codec = ffmpeg.av_codec_iterate(&iterator);
-        var inputContext = ffmpeg.avcodec_alloc_context3(codec);
+        var h264Codecs = FFCodec.Codecs.Where(c => c.Name.Contains("x264")).ToArray();
+        var codec = h264Codecs.First();
+        var inputContext = ffmpeg.avcodec_alloc_context3(codec!.Target);
 
         Update(inputContext);
     }
 
-    public FFMediaClass MediaClass
-    {
-        get
-        {
-            var wantePtr = new nint(Target->av_class);
-            var resolvedPtr = (nint)((void**)Target);
-            return new(Target->av_class);
-        }
-
-    }
-
-    public FFOptionsObject? Options => FFOptionsObject.TryWrap(this, out var options) ? options : null;
+    public FFOptionsWrapper? Options => FFOptionsWrapper.TryWrap(this, out var options) ? options : null;
 
     protected override unsafe void ReleaseInternal(AVCodecContext* target)
     {

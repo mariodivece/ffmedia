@@ -43,6 +43,26 @@ public unsafe sealed class FFOption(AVOption* target) :
     /// </summary>
     public double MaxValue => Target->min;
 
+    /// <summary>
+    /// Gets the default value defined for this option.
+    /// </summary>
+    public string? DefaultStringValue => NativeExtensions.ReadString(Target->default_val.str);
+
+    /// <summary>
+    /// Gets the default value defined for this option.
+    /// </summary>
+    public long DefaultLongValue => Target->default_val.i64;
+
+    /// <summary>
+    /// Gets the default value defined for this option.
+    /// </summary>
+    public AVRational DefaultRationalValue => Target->default_val.q;
+
+    /// <summary>
+    /// Gets the default value defined for this option.
+    /// </summary>
+    public double DefaultDoubleValue => Target->default_val.dbl;
+
     /// <inheritdoc />
     public override string ToString()
     {

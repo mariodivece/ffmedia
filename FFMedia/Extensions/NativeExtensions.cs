@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Frozen;
+using System.Text;
 
 namespace FFMedia.Extensions;
 
@@ -41,4 +42,27 @@ internal static unsafe class NativeExtensions
 
     public static void* ToPointer(this INativeReference nativeReference) =>
         nativeReference.IsNull ? null : nativeReference.Address.ToPointer();
+
+
+    public static IReadOnlyList<T> ExtractArray<T>(T* firstItem, T terminationValue)
+        where T : unmanaged
+    {
+        if (firstItem is null)
+            return Array.Empty<T>();
+
+        var result = new List<T>(32);
+        var currentItem = default(T);
+        var reachedEnd = false;
+        var offset = 0;
+        do
+        {
+            currentItem = firstItem[offset++];
+            reachedEnd = currentItem.Equals(terminationValue);
+            if (!reachedEnd)
+                result.Add(currentItem);
+
+        } while (!reachedEnd);
+
+        return result;
+    }
 }

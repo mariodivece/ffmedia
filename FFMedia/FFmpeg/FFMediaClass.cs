@@ -8,6 +8,11 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     NativeReferenceBase<AVClass>(target)
 {
     /// <summary>
+    /// Represents an empty <see cref="FFMediaClass"/>.
+    /// </summary>
+    public static FFMediaClass Empty { get; } = new(null);
+
+    /// <summary>
     /// Gets the <see cref="AVClass"/> for <see cref="AVCodecContext"/>.
     /// It can be used in combination with <see cref="ffmpeg.AV_OPT_SEARCH_FAKE_OBJ"/>
     /// for examining options.
@@ -36,14 +41,32 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     public static FFMediaClass Resampler { get; } = new(ffmpeg.swr_get_class());
 
     /// <summary>
-    /// Gets the child <see cref="FFMediaClass"/> objects.
+    /// Gets the name of the class; usually it is the same name as the context structure
+    /// type to which the <see cref="AVClass"/> is associated.
     /// </summary>
-    /// <inheritdoc />
-    public IReadOnlyList<FFMediaClass> Children
+    public string Name => IsNull ? string.Empty : NativeExtensions.ReadString(Target->class_name) ?? string.Empty;
+
+    /// <summary>
+    /// Gets the LIBAVUTIL_VERSION with which this structure was created.
+    /// This is used to allow fields to be added without requiring major 
+    /// version bumps everywhere.
+    /// </summary>
+    public int Version => IsNull ? default : Target->version;
+
+    /// <summary>
+    /// Gets the category used for visualization (like color) This is only
+    /// set if the category is equal for all objects using this class.
+    /// </summary>
+    public AVClassCategory Category => IsNull ? AVClassCategory.AV_CLASS_CATEGORY_NA : Target->category;
+
+    /// <summary>
+    /// Gets all possible child <see cref="FFMediaClass"/> objects.
+    /// </summary>
+    public IReadOnlyList<FFMediaClass> DefinedChildren
     {
         get
         {
-            if (Target is null)
+            if (IsNull)
                 return Array.Empty<FFMediaClass>();
 
             var result = new List<FFMediaClass>();
@@ -63,14 +86,14 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     }
 
     /// <summary>
-    /// Gets an iteration of all the options for this <see cref="FFMediaClass"/>.
+    /// Gets an iteration of all the possible well-known options
+    /// for this <see cref="FFMediaClass"/>.
     /// </summary>
-    /// <inheritdoc />
-    public IReadOnlyList<FFOption> Options
+    public IReadOnlyList<FFOption> DefinedOptions
     {
         get
         {
-            if (Target is null)
+            if (IsNull)
                 return Array.Empty<FFOption>();
 
             var options = new List<FFOption>();
@@ -100,7 +123,7 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     /// <remarks>Port of cmdutils.c/opt_find and based on libavutil/opt.c.</remarks>
     public FFOption? FindOption(string optionName, bool searchChildren)
     {
-        if (Target is null)
+        if (IsNull)
             return default;
 
         var searchFlags =

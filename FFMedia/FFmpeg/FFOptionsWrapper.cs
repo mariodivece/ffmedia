@@ -3,24 +3,35 @@
 /// <summary>
 /// Represents a wrapper for  data structures with AV-options enabled functionality.
 /// Such structures must have a <see cref="AVClass"/> pointer as their first defined element.
+/// This is a proxy class for implementing the <see cref="IFFOptionsEnabled"/> interface.
 /// </summary>
-public sealed unsafe class FFOptionsObject :
+public sealed unsafe class FFOptionsWrapper :
     NativeReference
 {
     private static readonly Dictionary<Type, bool> MediaClassField = new(16);
     private static readonly object SyncRoot = new();
 
-    private FFOptionsObject(void* target)
+    /// <summary>
+    /// Creates an instance of the <see cref="FFOptionsWrapper"/> class.
+    /// Use the <see cref="TryWrap{T}(INativeReference{T}, out FFOptionsWrapper)"/> method
+    /// to create and validate instances of this wrapper/proxy class.
+    /// </summary>
+    /// <param name="target">The pointer to the object.</param>
+    private FFOptionsWrapper(void* target)
         : base(target)
     {
     }
 
     /// <summary>
-    /// Gets the <see cref="INativeReference.Address"/> as a pointer.
+    /// Gets an empty <see cref="FFOptionsWrapper"/>.
     /// </summary>
-    public void* Target => Address.ToPointer();
+    public static FFOptionsWrapper Empty { get; } = new(null);
 
-    public IReadOnlyList<FFOption> Options
+    /// <summary>
+    /// Gets the currently stored options in the object.
+    /// Does not include options stored in child objects.
+    /// </summary>
+    public IReadOnlyList<FFOption> CurrentOptions
     {
         get
         {
@@ -41,14 +52,18 @@ public sealed unsafe class FFOptionsObject :
         }
     }
 
-    public IReadOnlyList<FFOptionsObject> Children
+    /// <summary>
+    /// Gets the child options-enabled object currently associated with
+    /// this object.
+    /// </summary>
+    public IReadOnlyList<FFOptionsWrapper> CurrentChildren
     {
         get
         {
-            if (Target is null)
-                return Array.Empty<FFOptionsObject>();
+            if (IsNull)
+                return Array.Empty<FFOptionsWrapper>();
 
-            var result = new List<FFOptionsObject>();
+            var result = new List<FFOptionsWrapper>();
             void* currentChild = null;
 
             do
@@ -56,7 +71,7 @@ public sealed unsafe class FFOptionsObject :
                 currentChild = ffmpeg.av_opt_child_next(Target, currentChild);
 
                 if (currentChild is not null)
-                    result.Add(new FFOptionsObject(currentChild));
+                    result.Add(new FFOptionsWrapper(currentChild));
 
             } while (currentChild is not null);
 
@@ -65,7 +80,12 @@ public sealed unsafe class FFOptionsObject :
         }
     }
 
-    public static bool TryWrap<T>(INativeReference<T> obj,[MaybeNullWhen(false)] out FFOptionsObject optionsObject)
+    /// <summary>
+    /// Gets the <see cref="INativeReference.Address"/> as a pointer.
+    /// </summary>
+    private void* Target => Address.ToPointer();
+
+    public static bool TryWrap<T>(INativeReference<T> obj,[MaybeNullWhen(false)] out FFOptionsWrapper optionsObject)
         where T : unmanaged
     {
         optionsObject = null;
@@ -77,20 +97,25 @@ public sealed unsafe class FFOptionsObject :
         return true;
     }
 
-    public FFOption? FindOption(string optionName, bool searchChildren)
+    public bool TryFindOption(string optionName, bool searchChildren, [MaybeNullWhen(false)] out FFOption option)
     {
-        if (Target is null)
-            return default;
+        option = default;
+        if (IsNull)
+            return false;
 
         var searchFlags = (searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : 0);
-        var option = ffmpeg.av_opt_find(Target, optionName, null, 0, searchFlags);
-        return option is not null
-            ? new(option)
-            : default;
+        var avoption = ffmpeg.av_opt_find(Target, optionName, null, 0, searchFlags);
+        if (avoption is not null)
+        {
+            option = new(avoption);
+            return true;
+        }
+
+        return false;
     }
 
     public bool HasOption(string optionName, bool searchChildren) =>
-        FindOption(optionName, searchChildren) is not null;
+        TryFindOption(optionName, searchChildren, out _);
 
     public void SetOptionValue(string optionName, bool searchChildren, string value)
     {
@@ -143,6 +168,20 @@ public sealed unsafe class FFOptionsObject :
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Gets the associated media class that defines all possible
+    /// options and child, option-enabled objects.
+    /// </summary>
+    /// <returns>The media class.</returns>
+    internal FFMediaClass GetMediaClass()
+    {
+        if (IsNull)
+            return FFMediaClass.Empty;
+
+        var avClassPointer = (AVClass*)((nint*)Target)[0];
+        return new(avClassPointer);
     }
 
     private static bool CheckIsAVOptionsEnabled<TStruct>()
