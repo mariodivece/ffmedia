@@ -20,7 +20,7 @@ internal unsafe class Program
 
         var n = FFMediaClass.Format;
 
-        using var context = new DummyContext();
+        using var context = new FFCodecContext();
 
 
         Console.WriteLine($"Result: {Result}");
@@ -76,7 +76,7 @@ public unsafe class DummyContext : NativeTrackedReferenceBase<AVCodecContext>
         Update(inputContext);
     }
 
-    public FFOptionsWrapper? Options => FFOptionsWrapper.TryWrap(this, out var options) ? options : null;
+    public FFOptionsStore? Options => FFOptionsStore.TryWrap(this, out var options) ? options : null;
 
     protected override unsafe void ReleaseInternal(AVCodecContext* target)
     {

@@ -62,7 +62,7 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     /// <summary>
     /// Gets all possible child <see cref="FFMediaClass"/> objects.
     /// </summary>
-    public IReadOnlyList<FFMediaClass> DefinedChildren
+    public IReadOnlyList<FFMediaClass> Children
     {
         get
         {
@@ -89,7 +89,7 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     /// Gets an iteration of all the possible well-known options
     /// for this <see cref="FFMediaClass"/>.
     /// </summary>
-    public IReadOnlyList<FFOption> DefinedOptions
+    public IReadOnlyList<FFOption> Options
     {
         get
         {
@@ -123,6 +123,8 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     /// <remarks>Port of cmdutils.c/opt_find and based on libavutil/opt.c.</remarks>
     public FFOption? FindOption(string optionName, bool searchChildren)
     {
+        // TODO: Change to TryFindOption
+
         if (IsNull)
             return default;
 

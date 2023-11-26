@@ -1,26 +1,33 @@
-﻿namespace FFMedia.FFmpeg;
+﻿namespace FFmpeg;
 
 /// <summary>
 /// Provides member definitions for data structures that
 /// can store options and change options. The <see cref="MediaClass"/>
-/// defines all possible options and children, while the <see cref="Options"/>
+/// defines all possible options and children, while the <see cref="CurrentOptions"/>
 /// allow the user to access and change option data for this instance.
-/// It is recommended that you use the <see cref="FFOptionsWrapper"/>
+/// It is recommended that you use the <see cref="FFOptionsStore"/> class
 /// to quickly implement <see cref="AVOption"/>-enabled structures.
 /// Only those structures which define their first members to be
 /// <see cref="AVClass"/> are supported.
 /// </summary>
-public interface IFFOptionsEnabled
+public interface IFFOptionsEnabled :
+    INativeReference
 {
     /// <summary>
     /// Gets the media class that defines all possible options and
     /// child option objects.
     /// </summary>
-    public FFMediaClass MediaClass { get; }
+    FFMediaClass MediaClass { get; }
 
     /// <summary>
-    /// Gets a proxy to read and write instance options
-    /// for this opbject.
+    /// Gets the currently stored options in the object.
+    /// Does not include options stored in child objects.
     /// </summary>
-    public FFOptionsWrapper Options { get; }
+    IReadOnlyList<FFOption> CurrentOptions { get; }
+
+    /// <summary>
+    /// Gets the child options-enabled object currently associated with
+    /// this object.
+    /// </summary>
+    IReadOnlyList<FFOptionsStore> CurrentChildren { get; }
 }

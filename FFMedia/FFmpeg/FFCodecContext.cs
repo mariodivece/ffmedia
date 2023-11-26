@@ -1,9 +1,18 @@
 ﻿namespace FFMedia.FFmpeg;
 
+/// <summary>
+/// Represents a wrapper for <see cref="AVCodecContext"/>.
+/// </summary>
 public unsafe class FFCodecContext :
     NativeTrackedReferenceBase<AVCodecContext>,
     IFFOptionsEnabled
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FFCodecContext"/> class
+    /// without any particular codec.
+    /// </summary>
+    /// <param name="filePath">The allocation file path.</param>
+    /// <param name="lineNumber">The allocation line number.</param>
     public FFCodecContext(
         [CallerFilePath] string? filePath = default,
         [CallerLineNumber] int? lineNumber = default)
@@ -12,6 +21,13 @@ public unsafe class FFCodecContext :
         Update(ffmpeg.avcodec_alloc_context3(codec: null));
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FFCodecContext"/> class
+    /// with a specific codec.
+    /// </summary>
+    /// <param name="codec">The codec reference.</param>
+    /// <param name="filePath">The allocation file path.</param>
+    /// <param name="lineNumber">The allocation line number.</param>
     public FFCodecContext(
         FFCodec codec,
         [CallerFilePath] string? filePath = default,
@@ -23,10 +39,20 @@ public unsafe class FFCodecContext :
     }
 
     /// <inheritdoc />
-    public FFMediaClass MediaClass => Options.GetMediaClass();
+    public FFMediaClass MediaClass => OptionsWrapper.MediaClass;
 
     /// <inheritdoc />
-    public FFOptionsWrapper Options => FFOptionsWrapper.TryWrap(this, out var options) ? options : FFOptionsWrapper.Empty;
+    public IReadOnlyList<FFOption> CurrentOptions => OptionsWrapper.CurrentOptions;
+
+    /// <inheritdoc />
+    public IReadOnlyList<FFOptionsStore> CurrentChildren => OptionsWrapper.CurrentChildren;
+
+    /// <summary>
+    /// Gets a wrapper for implementing <see cref="IFFOptionsEnabled"/>.
+    /// </summary>
+    private FFOptionsStore OptionsWrapper => FFOptionsStore.TryWrap(this, out var options)
+        ? options
+        : FFOptionsStore.Empty;
 
     /// <inheritdoc />
     protected override unsafe void ReleaseInternal(AVCodecContext* target)
