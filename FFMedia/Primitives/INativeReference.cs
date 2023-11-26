@@ -40,6 +40,11 @@ public unsafe interface INativeReference<T> : INativeReference
     void Update(T* target);
 
     /// <summary>
+    /// Gets a typed pointer to the wrapped data structure.
+    /// </summary>
+    T* Target { get; }
+
+    /// <summary>
     /// Gets the de-referenced value of the wrapped data structure.
     /// </summary>
     T Value { get; }
