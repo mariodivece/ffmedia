@@ -4,7 +4,8 @@
 /// Serves as a base implementation for a <see cref="INativeTrackedReference"/>.
 /// </summary>
 /// <typeparam name="T">The unmanaged data structure type that this class wraps.</typeparam>
-public abstract unsafe class NativeTrackedReferenceBase<T> : NativeReferenceBase<T>, INativeTrackedReference
+public abstract unsafe class NativeTrackedReferenceBase<T> :
+    NativeReferenceBase<T>, INativeTrackedReference
     where T : unmanaged
 {
     private long m_IsDsiposed;
@@ -46,8 +47,10 @@ public abstract unsafe class NativeTrackedReferenceBase<T> : NativeReferenceBase
     /// <summary>
     /// Implements the necessary steps to free the memory when
     /// <see cref="IDisposable.Dispose"/> is called.
-    /// There is no need to call <see cref="INativeReference.Update(nint)"/>.
-    /// or overrid the <see cref="Dispose(bool)"/> method.
+    /// There is no need to call <see cref="INativeReference.Update(nint)"/>
+    /// or override the <see cref="Dispose(bool)"/> method.
+    /// The passed pointer is always non-null, and therefore, no further
+    /// null checks have to be performed.
     /// </summary>
     /// <param name="target">The pointer addess to the data structure.</param>
     protected abstract void ReleaseInternal(T* target);

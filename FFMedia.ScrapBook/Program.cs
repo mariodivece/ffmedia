@@ -16,6 +16,21 @@ internal unsafe class Program
         FFmpegBindings.LibrariesPath = @"C:\ffmpeg\x64\";
         FFmpegBindings.Initialize();
 
+        using var dict = new FFDictionary();
+
+        dict["hello"] = "empty";
+        dict["world"] = string.Empty;
+        dict[""] = "page";
+
+        dict.Remove(string.Empty);
+        dict.Remove("hello");
+        dict.Remove("world");
+
+        dict.Add("Mexico", "Again");
+        dict["Mexico"] = "Changed String";
+        dict.Clear();
+        dict["Mario"] = "Di Vece";
+
         var n = FFMediaClass.Format;
 
         using var context = new FFCodecContext();

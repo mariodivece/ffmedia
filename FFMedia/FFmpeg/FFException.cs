@@ -46,17 +46,28 @@ public class FFException : Exception
         return description ?? $"{nameof(FFmpeg)} error code ({errorCode})";
     }
 
+    /// <summary>
+    /// Throsw an exception if the result code is negative.
+    /// </summary>
+    /// <param name="resultCode">The ffmpeg error code.</param>
+    /// <exception cref="FFException">The exception thrown.</exception>
     public static void ThrowIfNegative(int resultCode)
     {
-        if (resultCode > 0)
+        if (resultCode >= 0)
             return;
 
         throw new FFException(resultCode);
     }
 
+    /// <summary>
+    /// Throsw an exception if the result code is negative.
+    /// </summary>
+    /// <param name="resultCode">The ffmpeg error code.</param>
+    /// <param name="userMessage">A custom error message.</param>
+    /// <exception cref="FFException">The exception thrown.</exception>
     public static void ThrowIfNegative(int resultCode, string userMessage)
     {
-        if (resultCode > 0)
+        if (resultCode >= 0)
             return;
 
         throw new FFException(resultCode, userMessage);

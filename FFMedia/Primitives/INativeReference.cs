@@ -19,10 +19,17 @@ public unsafe interface INativeReference
     void Update(nint address);
 
     /// <summary>
-    /// Gets a value indicating whether this instance no
-    /// points to a non-zero <see cref="Address"/>
+    /// Gets a value indicating whether this instance
+    /// points to a non-zero <see cref="Address"/>.
     /// </summary>
     bool IsNull { get; }
+
+    /// <summary>
+    /// Gets a generic void pointer based on the given native reference.
+    /// The pointer is derived from <see cref="Address"/>.
+    /// </summary>
+    /// <returns>The pointer.</returns>
+    void* ToPointer();
 }
 
 /// <summary>
@@ -45,12 +52,12 @@ public unsafe interface INativeReference<T> : INativeReference
     T* Target { get; }
 
     /// <summary>
-    /// Gets the de-referenced value of the wrapped data structure.
-    /// </summary>
-    T Value { get; }
-
-    /// <summary>
     /// Gets the size in bytes of the wrapped data structure.
     /// </summary>
     int StructureSize { get; }
+
+    /// <summary>
+    /// Gets the de-referenced value of the wrapped data structure.
+    /// </summary>
+    T ToValue();
 }

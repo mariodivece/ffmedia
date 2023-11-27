@@ -26,7 +26,7 @@ public abstract unsafe class NativeReferenceBase<T> :
     /// You can the call the <see cref="INativeReference.Update(nint)"/> method to provide access to the reference.
     /// </summary>
     protected NativeReferenceBase()
-        : base(IntPtr.Zero)
+        : base(default(nint))
     {
         // placeholder
     }
@@ -35,10 +35,10 @@ public abstract unsafe class NativeReferenceBase<T> :
     public T* Target => IsNull ? null : (T*)Address;
 
     /// <inheritdoc />
-    public T Value => IsNull ? default : *Target;
+    public int StructureSize => sizeof(T);
 
     /// <inheritdoc />
-    public int StructureSize => sizeof(T);
+    public T ToValue() => IsNull ? default : *Target;
 
     /// <inheritdoc />
     public void Update(T* target) => Update(target is null

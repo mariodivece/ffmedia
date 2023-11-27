@@ -41,18 +41,6 @@ internal static unsafe class NativeExtensions
     public static bool ToBool(this int value) => value != 0;
 
     /// <summary>
-    /// Gets a generic void pointer based on the given native reference.
-    /// The pointer is derived from <see cref="INativeReference.Address"/>.
-    /// </summary>
-    /// <param name="nativeReference">The native reference wrapper.</param>
-    /// <returns>The pointer.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void* ToPointer(this INativeReference nativeReference) =>
-        nativeReference is null || nativeReference.IsNull
-        ? null
-        : nativeReference.Address.ToPointer();
-
-    /// <summary>
     /// Reads an array of consecutive items of the given
     /// type at the starting address and until a value with
     /// the termination value is found. The item with the termination
