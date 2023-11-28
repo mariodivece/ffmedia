@@ -76,23 +76,3 @@ internal unsafe class Program
         Console.WriteLine($"{name,-16} Entry: {entryCount,8}, Deny: {denyCount,8} ");
     }
 }
-
-public unsafe class DummyContext : NativeTrackedReferenceBase<AVCodecContext>
-{
-    public DummyContext()
-        : base(null, null)
-    {
-        var h264Codecs = FFCodec.Codecs.Where(c => c.Name.Contains("x264")).ToArray();
-        var codec = h264Codecs.First();
-        var inputContext = ffmpeg.avcodec_alloc_context3(codec!.Target);
-
-        Update(inputContext);
-    }
-
-    public FFOptionsStore? Options => FFOptionsStore.TryWrap(this, out var options) ? options : null;
-
-    protected override unsafe void ReleaseInternal(AVCodecContext* target)
-    {
-        ffmpeg.avcodec_free_context(&target);
-    }
-}

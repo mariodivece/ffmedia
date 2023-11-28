@@ -14,7 +14,7 @@ public sealed unsafe class FFOptionsStore :
 
     /// <summary>
     /// Creates an instance of the <see cref="FFOptionsStore"/> class.
-    /// Use the <see cref="TryWrap{T}(INativeReference{T}, out FFOptionsStore)"/> method
+    /// Use the <see cref="TryWrap{T}(INativeReference{T}, out IFFOptionsEnabled)"/> method
     /// to create and validate instances of this wrapper/proxy class.
     /// </summary>
     /// <param name="target">The pointer to the object.</param>
@@ -93,7 +93,16 @@ public sealed unsafe class FFOptionsStore :
     /// </summary>
     private void* Target => Address.ToPointer();
 
-    public static bool TryWrap<T>(INativeReference<T> obj,[MaybeNullWhen(false)] out FFOptionsStore optionsObject)
+    /// <summary>
+    /// Attempts to wrap a <see cref="INativeReference{T}"/> as an options-enabled,
+    /// <see cref="IFFOptionsEnabled"/> object. This validates that the target data
+    /// structure has a <see cref="AVClass"/> pointer defined in its first field.
+    /// </summary>
+    /// <typeparam name="T">The data structure to wrap.</typeparam>
+    /// <param name="obj">The data structure wrapper to cast as </param>
+    /// <param name="optionsObject"></param>
+    /// <returns></returns>
+    public static bool TryWrap<T>(INativeReference<T> obj,[MaybeNullWhen(false)] out IFFOptionsEnabled optionsObject)
         where T : unmanaged
     {
         optionsObject = null;
@@ -101,7 +110,7 @@ public sealed unsafe class FFOptionsStore :
         if (!CheckIsAVOptionsEnabled<T>())
             return false;
 
-        optionsObject = new(obj.ToPointer());
+        optionsObject = new FFOptionsStore(obj.ToPointer());
         return true;
     }
 

@@ -50,7 +50,7 @@ public unsafe class FFCodecContext :
     /// <summary>
     /// Gets a wrapper for implementing <see cref="IFFOptionsEnabled"/>.
     /// </summary>
-    private FFOptionsStore OptionsWrapper => FFOptionsStore.TryWrap(this, out var options)
+    private IFFOptionsEnabled OptionsWrapper => FFOptionsStore.TryWrap(this, out var options)
         ? options
         : FFOptionsStore.Empty;
 
