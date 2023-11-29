@@ -2,6 +2,7 @@
 
 /// <summary>
 /// Defines an exception based on FFmpeg's error codes.
+/// See the ffmpeg.AVERROR_* codes.
 /// </summary>
 public class FFException : Exception
 {

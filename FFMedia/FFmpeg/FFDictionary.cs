@@ -18,6 +18,7 @@ public unsafe class FFDictionary :
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="FFDictionary"/> class.
+    /// Allocates an empty dictionary.
     /// </summary>
     /// <param name="filePath">The allocation file path.</param>
     /// <param name="lineNumber">The allocation line number.</param>
@@ -53,10 +54,10 @@ public unsafe class FFDictionary :
     }
 
     /// <inheritdoc />
-    public ICollection<string> Keys => GetEntries().Select(c => c.Key).ToArray();
+    public ICollection<string> Keys => ReadEntries(Target).Select(c => c.Key).ToArray();
 
     /// <inheritdoc />
-    public ICollection<string> Values => GetEntries().Select(c => c.Value).ToArray();
+    public ICollection<string> Values => ReadEntries(Target).Select(c => c.Value).ToArray();
 
     /// <inheritdoc />
     public int Count => IsNull ? 0 : Math.Max(ffmpeg.av_dict_count(Target), 0);
@@ -105,7 +106,7 @@ public unsafe class FFDictionary :
             return;
 
         var currentOffset = arrayIndex;
-        foreach (var kvp in GetEntries())
+        foreach (var kvp in ReadEntries(Target))
         {
             if (currentOffset >= array.Length)
                 break;
@@ -120,7 +121,7 @@ public unsafe class FFDictionary :
 
     /// <inheritdoc />
     public IEnumerator<KeyValuePair<string, string>> GetEnumerator() =>
-        GetEntries().Select(c => c.ToKeyValuePair()).GetEnumerator();
+        ReadEntries(Target).Select(c => c.ToKeyValuePair()).GetEnumerator();
 
     /// <inheritdoc />
     public bool Remove(string key)
@@ -139,7 +140,7 @@ public unsafe class FFDictionary :
         {
             Update(dictionary);
         }
-        
+
         return result >= 0;
     }
 
@@ -206,21 +207,69 @@ public unsafe class FFDictionary :
     }
 
     /// <summary>
+    /// Reads all entries into a new <see cref="IReadOnlyDictionary{TKey, TValue}"/>.
+    /// </summary>
+    /// <returns>The newly-created dictionary.</returns>
+    public IReadOnlyDictionary<string, string> ToDictionary() => ToDictionary(Target);
+
+    /// <summary>
+    /// Reads all entries into a new <see cref="IReadOnlyDictionary{TKey, TValue}"/>.
+    /// </summary>
+    /// <param name="source">The reference to the dictionary.</param>
+    /// <returns>The newly-created dictionary.</returns>
+    public static IReadOnlyDictionary<string, string> ToDictionary(AVDictionary* source)
+    {
+        if (source is null)
+            return Constants.EmptyDictionary;
+
+        var dictionary = new Dictionary<string, string>();
+        foreach (var entry in ReadEntries(source))
+            dictionary.Add(entry.Key, entry.Value);
+
+        return dictionary;
+    }
+
+    /// <summary>
+    /// Converst a dictionary of string key-value pairs into an
+    /// unmanaged <see cref="FFDictionary"/>.
+    /// </summary>
+    /// <param name="source">The dictionary to convert.</param>
+    /// <param name="filePath">The allocation file path.</param>
+    /// <param name="lineNumber">The allocation line number.</param>
+    /// <returns>The newly-allocated dictionary.</returns>
+    public static FFDictionary FromDictionary(
+        IDictionary<string, string> source,
+        [CallerFilePath] string? filePath = default,
+        [CallerLineNumber] int? lineNumber = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        var result = new FFDictionary(filePath, lineNumber);
+        foreach (var kvp in source)
+            result.Add(kvp.Key, kvp.Value);
+
+        return result;
+    }
+
+    /// <summary>
     /// Iterates over the entries and returns it as a list.
     /// </summary>
     /// <returns>A list of entries currently stored in the dictionary.</returns>
-    private IReadOnlyList<FFDictionaryEntry> GetEntries()
+    private static IReadOnlyList<FFDictionaryEntry> ReadEntries(AVDictionary* source)
     {
-        if (IsNull)
+        if (source is null)
             return Array.Empty<FFDictionaryEntry>();
 
-        var count = Math.Max(ffmpeg.av_dict_count(Target), 0);
+        var count = Math.Max(ffmpeg.av_dict_count(source), 0);
+        if (count <= 0)
+            return Array.Empty<FFDictionaryEntry>();
+
         var result = new List<FFDictionaryEntry>(count);
         AVDictionaryEntry* currentEntry = null;
 
         do
         {
-            currentEntry = ffmpeg.av_dict_iterate(Target, currentEntry);
+            currentEntry = ffmpeg.av_dict_iterate(source, currentEntry);
             if (currentEntry is not null && currentEntry->value is not null)
                 result.Add(new(currentEntry));
 

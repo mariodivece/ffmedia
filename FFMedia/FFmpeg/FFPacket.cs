@@ -48,7 +48,7 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     /// </summary>
     public int StreamIndex
     {
-        get => Target->stream_index;
+        get => Target is not null ? Target->stream_index : default;
         private set => Target->stream_index = value;
     }
 
@@ -58,7 +58,7 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     /// </summary>
     public long DurationUnits
     {
-        get => Target->duration;
+        get => Target is not null ? Target->duration : default;
         set => Target->duration = value;
     }
 
@@ -67,7 +67,7 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     /// </summary>
     public int DataSize
     {
-        get => Target->size;
+        get => Target is not null ? Target->size : default;
         set => Target->size = value;
     }
 
@@ -76,7 +76,7 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     /// </summary>
     public byte* Data
     {
-        get => Target->data;
+        get => Target is not null ? Target->data : default;
         set => Target->data = value;
     }
 
@@ -89,14 +89,15 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     /// Gets the presentation timestamp in <see cref="AVStream.time_base"/> units.
     /// Returns null if unknown.
     /// </summary>
-    public long? Pts => Target->pts.IsValidTimestamp()
-        ? Target->pts : Target->dts.ToNullable();
+    public long? PtsUnits => Target is not null
+        ? Target->pts.IsValidTimestamp() ? Target->pts : Target->dts.ToNullable()
+        : default;
 
     /// <summary>
     /// Gets the decompression timestamp in <see cref="AVStream.time_base"/> units.
     /// Returns null if not stored in the file.
     /// </summary>
-    public long? Dts => Target->dts.ToNullable();
+    public long? DtsUnits => Target is not null ? Target->dts.ToNullable() : default;
 
     /// <summary>
     /// Creates and allocates a special packet that forces the stream to be flushed.
@@ -145,7 +146,24 @@ public unsafe sealed class FFPacket : NativeTrackedReferenceBase<AVPacket>, ISer
     public FFPacket Clone(
         [CallerFilePath] string? filePath = default,
         [CallerLineNumber] int? lineNumber = default) =>
-        new(ffmpeg.av_packet_clone(Target), filePath, lineNumber);
+        Clone(Target, filePath, lineNumber);
+
+    /// <summary>
+    /// Makes a newly allocated copy of the specified packet that
+    /// references the same <see cref="Data"/>.
+    /// </summary>
+    /// <remarks>See <see cref="ffmpeg.av_packet_clone"/>.</remarks>
+    /// <param name="source">The packet to clone.</param>
+    /// <param name="filePath">The source file path.</param>
+    /// <param name="lineNumber">The source line number.</param>
+    /// <returns>The cloned packet.</returns>
+    public static FFPacket Clone(AVPacket* source,
+        [CallerFilePath] string? filePath = default,
+        [CallerLineNumber] int? lineNumber = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return new(ffmpeg.av_packet_clone(source), filePath, lineNumber);
+    }
 
     /// <inheritdoc />
     protected override void ReleaseInternal(AVPacket* target) =>

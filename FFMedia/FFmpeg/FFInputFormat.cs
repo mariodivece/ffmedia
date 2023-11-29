@@ -13,9 +13,14 @@ public unsafe sealed class FFInputFormat(AVInputFormat* target) :
     private const StringSplitOptions SplitOptions = StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries;
 
     /// <summary>
+    /// Represents an input format with no target.
+    /// </summary>
+    public static FFInputFormat Empty { get; } = new FFInputFormat(null);
+
+    /// <summary>
     /// Gets the flags. Also see <see cref="AVInputFormat.flags"/>.
     /// </summary>
-    public int Flags => Target->flags;
+    public int Flags => Target is not null ? Target->flags : default;
 
     /// <summary>
     /// Gets a comma separated list of short names for the format.

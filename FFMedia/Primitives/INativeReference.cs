@@ -20,7 +20,8 @@ public unsafe interface INativeReference
 
     /// <summary>
     /// Gets a value indicating whether this instance
-    /// points to a non-zero <see cref="Address"/>.
+    /// points to a zero <see cref="Address"/>. In other words,
+    /// if it is a null pointer.
     /// </summary>
     bool IsNull { get; }
 

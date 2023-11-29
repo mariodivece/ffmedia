@@ -18,12 +18,12 @@ public unsafe class FFDictionaryEntry  : NativeReferenceBase<AVDictionaryEntry>
     /// <summary>
     /// Gets the key.
     /// </summary>
-    public string Key => NativeExtensions.ReadString(Target->key) ?? string.Empty;
+    public string Key => IsNull ? string.Empty : NativeExtensions.ReadString(Target->key) ?? string.Empty;
 
     /// <summary>
     /// Gets the value.
     /// </summary>
-    public string Value => NativeExtensions.ReadString(Target->value) ?? string.Empty;
+    public string Value => IsNull ? string.Empty : NativeExtensions.ReadString(Target->value) ?? string.Empty;
 
     /// <summary>
     /// Converts the <see cref="FFDictionaryEntry"/> to a <see cref="KeyValuePair{TKey, TValue}"/>.

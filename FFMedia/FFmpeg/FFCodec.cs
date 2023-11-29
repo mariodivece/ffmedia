@@ -26,7 +26,7 @@ public unsafe sealed class FFCodec : NativeReferenceBase<AVCodec>
 
             void* iterator = null;
             AVCodec* currentItem;
-            
+
             do
             {
                 currentItem = ffmpeg.av_codec_iterate(&iterator);
@@ -34,7 +34,7 @@ public unsafe sealed class FFCodec : NativeReferenceBase<AVCodec>
                     result.Add(new(currentItem));
 
             } while (currentItem is not null);
-            
+
             return result;
         }
     }
@@ -42,22 +42,26 @@ public unsafe sealed class FFCodec : NativeReferenceBase<AVCodec>
     /// <summary>
     /// Gets the coded Id.
     /// </summary>
-    public AVCodecID Id => Target->id;
+    public AVCodecID Id => Target is not null
+        ? Target->id
+        : AVCodecID.AV_CODEC_ID_NONE;
 
     /// <summary>
     /// Gets a value indicating that the codec supports encoding.
     /// </summary>
-    public bool IsEncoder => ffmpeg.av_codec_is_encoder(Target).ToBool();
+    public bool IsEncoder => Target is not null &&
+        ffmpeg.av_codec_is_encoder(Target).ToBool();
 
     /// <summary>
     /// Gets a value indication that the codec supports decoding. 
     /// </summary>
-    public bool IsDecoder => ffmpeg.av_codec_is_decoder(Target).ToBool();
+    public bool IsDecoder => Target is not null &&
+        ffmpeg.av_codec_is_decoder(Target).ToBool();
 
     /// <summary>
     /// Gets the codec's media type.
     /// </summary>
-    public AVMediaType MediaType => Target->type;
+    public AVMediaType MediaType => Target is not null ? Target->type : AVMediaType.AVMEDIA_TYPE_UNKNOWN;
 
     /// <summary>
     /// Gets the codec capabilities in the form of flags.
@@ -83,22 +87,28 @@ public unsafe sealed class FFCodec : NativeReferenceBase<AVCodec>
     /// <summary>
     /// Gets the private <see cref="AVClass"/> for the context.
     /// </summary>
-    public FFMediaClass PrivateMediaClass => new(Target->priv_class);
+    public FFMediaClass PrivateMediaClass => Target is not null && Target->priv_class is not null
+        ? new(Target->priv_class)
+        : FFMediaClass.Empty;
 
     /// <summary>
     /// Gets the maximum low resolution factor for the decoder.
     /// </summary>
-    public int MaxLowResFactor => Target->max_lowres;
+    public int MaxLowResFactor => Target is not null ? Target->max_lowres : default;
 
     /// <summary>
     /// Gets the codec name.
     /// </summary>
-    public string Name => NativeExtensions.ReadString(Target->name) ?? string.Empty;
+    public string Name => Target is not null
+        ? NativeExtensions.ReadString(Target->name) ?? string.Empty
+        : string.Empty;
 
     /// <summary>
     /// Gets the human=readable, friendly codec name.
     /// </summary>
-    public string LongName => NativeExtensions.ReadString(Target->long_name) ?? string.Empty;
+    public string LongName => Target is not null
+        ? NativeExtensions.ReadString(Target->long_name) ?? string.Empty
+        : string.Empty;
 
     /// <summary>
     /// Gets the group name of the codec implementation.
@@ -108,43 +118,51 @@ public unsafe sealed class FFCodec : NativeReferenceBase<AVCodec>
     /// If this field is null, this is a builtin, libavcodec native codec.
     /// If non-NULL, this will be the suffix in AVCodec.name in most cases.
     /// </summary>
-    public string? GroupName => NativeExtensions.ReadString(Target->wrapper_name);
+    public string? GroupName => Target is not null
+        ? NativeExtensions.ReadString(Target->wrapper_name)
+        : default;
 
     /// <summary>
     /// Gets a list of supported pixel formats.
     /// </summary>
-    public IReadOnlyList<AVPixelFormat> PixelFormats =>
-        NativeExtensions.ExtractArray(Target->pix_fmts, AVPixelFormat.AV_PIX_FMT_NONE);
+    public IReadOnlyList<AVPixelFormat> PixelFormats => Target is not null
+        ? NativeExtensions.ExtractArray(Target->pix_fmts, AVPixelFormat.AV_PIX_FMT_NONE)
+        : Array.Empty<AVPixelFormat>();
 
     /// <summary>
     /// Gets a list of supported frame rates.
     /// </summary>
-    public IReadOnlyList<AVRational> FrameRates =>
-        NativeExtensions.ExtractArray(Target->supported_framerates, default);
+    public IReadOnlyList<AVRational> FrameRates => Target is not null
+        ? NativeExtensions.ExtractArray(Target->supported_framerates, default)
+        : Array.Empty<AVRational>();
 
     /// <summary>
     /// Gets a list of supported sample formats.
     /// </summary>
-    public IReadOnlyList<AVSampleFormat> SampleFormats =>
-        NativeExtensions.ExtractArray(Target->sample_fmts, AVSampleFormat.AV_SAMPLE_FMT_NONE);
+    public IReadOnlyList<AVSampleFormat> SampleFormats => Target is not null
+        ? NativeExtensions.ExtractArray(Target->sample_fmts, AVSampleFormat.AV_SAMPLE_FMT_NONE)
+        : Array.Empty<AVSampleFormat>();
 
     /// <summary>
     /// Gets a list of supported sample rates.
     /// </summary>
-    public IReadOnlyList<int> SampleRates =>
-        NativeExtensions.ExtractArray(Target->supported_samplerates, 0);
+    public IReadOnlyList<int> SampleRates => Target is not null
+        ? NativeExtensions.ExtractArray(Target->supported_samplerates, 0)
+        : Array.Empty<int>();
 
     /// <summary>
     /// Gets a list of supported channel layouts.
     /// </summary>
-    public IReadOnlyList<AVChannelLayout> ChannelLayouts =>
-        NativeExtensions.ExtractArray(Target->ch_layouts, default);
+    public IReadOnlyList<AVChannelLayout> ChannelLayouts => Target is not null
+        ? NativeExtensions.ExtractArray(Target->ch_layouts, default)
+        : Array.Empty<AVChannelLayout>();
 
     /// <summary>
     /// Gets a list of supported profiles.
     /// </summary>
-    public IReadOnlyList<AVProfile> Profiles =>
-        NativeExtensions.ExtractArray(Target->profiles, new() { profile = ffmpeg.FF_PROFILE_UNKNOWN });
+    public IReadOnlyList<AVProfile> Profiles => Target is not null
+        ? NativeExtensions.ExtractArray(Target->profiles, new() { profile = ffmpeg.FF_PROFILE_UNKNOWN })
+        : Array.Empty<AVProfile>();
 
     /// <summary>
     /// Gets the codec given the codec id.

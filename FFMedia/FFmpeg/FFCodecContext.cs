@@ -47,16 +47,14 @@ public unsafe class FFCodecContext :
     /// <inheritdoc />
     public IReadOnlyList<IFFOptionsEnabled> CurrentChildren => OptionsWrapper.CurrentChildren;
 
+    /// <inheritdoc />
+    protected override unsafe void ReleaseInternal(AVCodecContext* target) =>
+        ffmpeg.avcodec_free_context(&target);
+
     /// <summary>
     /// Gets a wrapper for implementing <see cref="IFFOptionsEnabled"/>.
     /// </summary>
     private IFFOptionsEnabled OptionsWrapper => FFOptionsStore.TryWrap(this, out var options)
         ? options
         : FFOptionsStore.Empty;
-
-    /// <inheritdoc />
-    protected override unsafe void ReleaseInternal(AVCodecContext* target)
-    {
-        ffmpeg.avcodec_free_context(&target);
-    }
 }

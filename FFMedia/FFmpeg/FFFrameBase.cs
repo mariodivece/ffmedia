@@ -39,28 +39,34 @@ public unsafe abstract class FFFrameBase :
     public abstract AVMediaType MediaType { get; }
 
     /// <inheritdoc />
-    public long PacketPosition => Target->pkt_pos;
+    public long PacketPosition => Target is not null ? Target->pkt_pos : default;
 
     /// <inheritdoc />
-    public byte_ptr8 Data => Target->data;
+    public byte_ptr8 Data => Target is not null ? Target->data : default;
 
     /// <inheritdoc />
-    public long? Pts => Target->pts.ToNullable();
+    public long? Pts => Target is not null ? Target->pts.ToNullable() : default;
 
     /// <inheritdoc />
-    public long? PacketDts => Target->pkt_dts.ToNullable();
+    public long? PacketDts => Target is not null ? Target->pkt_dts.ToNullable() : default;
 
     /// <inheritdoc />
-    public long? BestEffortPts => Target->best_effort_timestamp.ToNullable();
+    public long? BestEffortPts => Target is not null ? Target->best_effort_timestamp.ToNullable() : default;
 
     /// <inheritdoc />
-    public byte** ExtendedData => Target->extended_data;
+    public byte** ExtendedData => Target is not null ? Target->extended_data : default;
 
     /// <summary>
     /// Unreference all the buffers referenced by frame and reset the frame fields.
     /// </summary>
     /// <remarks>See <see cref="ffmpeg.av_frame_unref(AVFrame*)"/>.</remarks>
-    public void Reset() => ffmpeg.av_frame_unref(Target);
+    public void Reset()
+    {
+        if (Target is null)
+            return;
+
+        ffmpeg.av_frame_unref(Target);
+    }
 
     /// <summary>
     /// Move everything contained in this frame to a destination frame and reset this frame.
@@ -70,8 +76,11 @@ public unsafe abstract class FFFrameBase :
     public void MoveTo<T>(T destination)
         where T : INativeReference<AVFrame>
     {
-        if (destination is null)
-            throw new ArgumentNullException(nameof(destination));
+        if (Target is null)
+            throw new InvalidOperationException("Current frame has to point to a non-zero address.");
+
+        ArgumentNullException.ThrowIfNull(destination);
+        if (destination.IsNull) throw new ArgumentNullException(nameof(destination));
 
         ffmpeg.av_frame_move_ref(destination.Target, Target);
     }

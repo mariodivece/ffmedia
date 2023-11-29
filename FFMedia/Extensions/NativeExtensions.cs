@@ -72,4 +72,13 @@ internal static unsafe class NativeExtensions
 
         return result;
     }
+
+    /// <summary>
+    /// Determines if an integer storing certain flags contains one or more given flag values.
+    /// </summary>
+    /// <param name="flagsVariable">The flags variable to check.</param>
+    /// <param name="flagValue">The flags or set of combined flags to match.</param>
+    /// <returns>True if the flags variable contains one or more flags to match.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool HasFlag(this int flagsVariable, int flagValue) => (flagsVariable & flagValue) != 0;
 }

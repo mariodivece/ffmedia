@@ -43,7 +43,7 @@ public unsafe class FFAudioFrame :
     public AVSampleFormat SampleFormat => (AVSampleFormat)Target->format;
 
     /// <inheritdoc />
-    public int ChannelCount => Target->ch_layout.nb_channels;
+    public int ChannelCount => ChannelLayout.nb_channels;
 
     /// <inheritdoc />
     public int SampleRate => Target->sample_rate;
