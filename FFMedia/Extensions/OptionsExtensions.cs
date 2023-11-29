@@ -1,7 +1,24 @@
 ﻿namespace FFMedia.Extensions;
 
+/// <summary>
+/// Provides options management for options-enabled objects as extension methods,
+/// rather than having to implement each interface member individually for each
+/// options-enabled class.
+/// </summary>
 public static unsafe class OptionsExtensions
 {
+    /// <summary>
+    /// Attempts to find an existing option in the options-enabled object.
+    /// </summary>
+    /// <remarks>
+    /// If search children is set to true, then the lookup occurs in the chilren first.
+    /// Otherwise, the lookup occurs in the current object exclusively.
+    /// </remarks>
+    /// <param name="store">The options-enabled object.</param>
+    /// <param name="optionName">The name of the option to look for.</param>
+    /// <param name="searchChildren">The the option name is searched for in the child objects first.</param>
+    /// <param name="option">The option if it was found.</param>
+    /// <returns>True if the option lookup succeeds. False otherwise.</returns>
     public static bool TryFindOption(this IFFOptionsEnabled store, string optionName,
         bool searchChildren, [MaybeNullWhen(false)] out FFOption option)
     {
@@ -9,7 +26,7 @@ public static unsafe class OptionsExtensions
         if (store is null || store.IsNull)
             return false;
 
-        var searchFlags = (searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : 0);
+        var searchFlags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : 0;
         var avoption = ffmpeg.av_opt_find(store.ToPointer(), optionName, null, 0, searchFlags);
         if (avoption is not null)
         {
@@ -20,6 +37,18 @@ public static unsafe class OptionsExtensions
         return false;
     }
 
+    /// <summary>
+    /// Determines if the option with the given name exists in either
+    /// the options-enabled object (or in one of its children).
+    /// </summary>
+    /// <remarks>
+    /// If search children is set to true, then the lookup occurs in the chilren first.
+    /// Otherwise, the lookup occurs in the current object exclusively.
+    /// </remarks>
+    /// <param name="store">The options-enabled object.</param>
+    /// <param name="optionName">The name of the option to look for.</param>
+    /// <param name="searchChildren">The the option name is searched for in the child objects first.</param>
+    /// <returns>Whether or not the option exists.</returns>
     public static bool HasOption(this IFFOptionsEnabled store, string optionName, bool searchChildren) =>
         store.TryFindOption(optionName, searchChildren, out _);
 

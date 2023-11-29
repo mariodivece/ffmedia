@@ -1,4 +1,4 @@
-﻿namespace FFMedia.FFmpeg;
+﻿namespace FFmpeg;
 
 /// <summary>
 /// Represents a wrapper for <see cref="AVCodecContext"/>.
@@ -45,7 +45,7 @@ public unsafe class FFCodecContext :
     public IReadOnlyList<FFOption> CurrentOptions => OptionsWrapper.CurrentOptions;
 
     /// <inheritdoc />
-    public IReadOnlyList<FFOptionsStore> CurrentChildren => OptionsWrapper.CurrentChildren;
+    public IReadOnlyList<IFFOptionsEnabled> CurrentChildren => OptionsWrapper.CurrentChildren;
 
     /// <summary>
     /// Gets a wrapper for implementing <see cref="IFFOptionsEnabled"/>.

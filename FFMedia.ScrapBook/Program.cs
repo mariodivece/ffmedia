@@ -1,7 +1,6 @@
-﻿using FFMedia.FFmpeg;
+﻿using FFMedia.Extensions;
 using FFMedia.Primitives;
 using FFmpeg;
-using FFmpeg.AutoGen.Abstractions;
 using System.Diagnostics;
 using FFmpegBindings = FFmpeg.AutoGen.Bindings.DynamicallyLoaded.DynamicallyLoadedBindings;
 
@@ -30,11 +29,15 @@ internal unsafe class Program
         dict["Mexico"] = "Changed String";
         dict.Clear();
         dict["Mario"] = "Di Vece";
+        dict.Remove("Mario");
 
         var n = FFMediaClass.Format;
 
         using var context = new FFCodecContext();
-
+        var optionValue = context.GetOptionValue("bt", true);
+        context.SetOptionValue("bt", true, "50000");
+        optionValue = context.GetOptionValue("bt", true);
+        Debug.Assert("50000".Equals(optionValue));
 
         Console.WriteLine($"Result: {Result}");
     }

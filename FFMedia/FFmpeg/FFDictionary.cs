@@ -4,8 +4,14 @@ namespace FFmpeg;
 
 /// <summary>
 /// Implements a <see cref="IDictionary{TKey, TValue}"/> based on a <see cref="AVDictionary"/>.
-/// The key lookups are not case-sensitive.
 /// </summary>
+/// <remarks>
+/// The <see cref="TryGetValue(string, out string)"/> tries to match as follows:
+/// <br /> 1. Case sensitive, exact
+/// <br /> 2. Case insensitive exact
+/// <br /> 3. Case sensitive starts-with
+/// <br /> 4. Case insensitive starts-with
+/// </remarks>
 public unsafe class FFDictionary :
     NativeTrackedReferenceBase<AVDictionary>,
     IDictionary<string, string>
@@ -18,9 +24,7 @@ public unsafe class FFDictionary :
     public FFDictionary([CallerFilePath] string? filePath = default, [CallerLineNumber] int? lineNumber = default)
         : base(filePath, lineNumber)
     {
-        AVDictionary* dictionary = null;
-        ffmpeg.av_dict_set(&dictionary, null, null, default);
-        Update(dictionary);
+        AllocateEmpty();
     }
 
     /// <inheritdoc />
@@ -33,7 +37,19 @@ public unsafe class FFDictionary :
                 ? value
                 : throw new KeyNotFoundException($"The specified key '{key}' was not found in the dictionary.");
         }
-        set => Add(key, value);
+        set
+        {
+            var dictionary = Target;
+            try
+            {
+                var result = ffmpeg.av_dict_set(&dictionary, key, value, default);
+                FFException.ThrowIfNegative(result);
+            }
+            finally
+            {
+                Update(dictionary);
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -54,10 +70,19 @@ public unsafe class FFDictionary :
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(value);
 
+        if (ContainsKey(key))
+            throw new ArgumentException($"The key '{key}' was already present in the dictionary");
+
         var dictionary = Target;
-        var result = ffmpeg.av_dict_set(&dictionary, key, value, default);
-        Update(dictionary);
-        FFException.ThrowIfNegative(result);
+        try
+        {
+            var result = ffmpeg.av_dict_set(&dictionary, key, value, default);
+            FFException.ThrowIfNegative(result);
+        }
+        finally
+        {
+            Update(dictionary);
+        }
     }
 
     /// <inheritdoc />
@@ -65,28 +90,13 @@ public unsafe class FFDictionary :
         Add(item.Key, item.Value);
 
     /// <inheritdoc />
-    public void Clear()
-    {
-        var dictionary = Target;
-
-        if (dictionary is not null)
-        ffmpeg.av_dict_free(&dictionary);
-        ffmpeg.av_dict_set(&dictionary, null, null, default);
-        Update(dictionary);
-    }
+    public void Clear() => AllocateEmpty();
 
     /// <inheritdoc />
     public bool Contains(KeyValuePair<string, string> item) => ContainsKey(item.Key);
 
     /// <inheritdoc />
-    public bool ContainsKey(string key)
-    {
-        if (IsNull)
-            return false;
-
-        var entry = ffmpeg.av_dict_get(Target, key, null, default);
-        return entry is not null && entry->value is not null;
-    }
+    public bool ContainsKey(string key) => TryGetValue(key, out _);
 
     /// <inheritdoc />
     public void CopyTo(KeyValuePair<string, string>[] array, int arrayIndex)
@@ -119,8 +129,17 @@ public unsafe class FFDictionary :
             return false;
 
         var dictionary = Target;
-        var result = ffmpeg.av_dict_set(&dictionary, key, null, default);
-        Update(dictionary);
+        var result = 0;
+
+        try
+        {
+            result = ffmpeg.av_dict_set(&dictionary, key, null, default);
+        }
+        finally
+        {
+            Update(dictionary);
+        }
+        
         return result >= 0;
     }
 
@@ -134,8 +153,23 @@ public unsafe class FFDictionary :
         if (Count <= 0) return false;
         if (string.IsNullOrWhiteSpace(key)) return false;
 
+
         var dictionary = Target;
-        var result = ffmpeg.av_dict_get(Target, key, null, default);
+
+        // Try an exact, case-sensitive match.
+        var result = ffmpeg.av_dict_get(Target, key, null, ffmpeg.AV_DICT_MATCH_CASE);
+
+        // Try an exact, case-insensitive match.
+        if (result is null)
+            result = ffmpeg.av_dict_get(Target, key, null, default);
+
+        // Try an case sensitive starts-with match.
+        if (result is null)
+            result = ffmpeg.av_dict_get(Target, key, null, ffmpeg.AV_DICT_MATCH_CASE | ffmpeg.AV_DICT_IGNORE_SUFFIX);
+
+        // Try an case insensitive starts with match.
+        if (result is null)
+            result = ffmpeg.av_dict_get(Target, key, null, ffmpeg.AV_DICT_IGNORE_SUFFIX);
 
         if (result is not null)
             value = NativeExtensions.ReadString(result->value);
@@ -143,6 +177,38 @@ public unsafe class FFDictionary :
         return value is not null;
     }
 
+    /// <summary>
+    /// Appends the given value to an existing key.
+    /// If the key does not exist, then just adds the key with
+    /// the specified value to the dictionary.
+    /// </summary>
+    /// <param name="key">The dictionary key.</param>
+    /// <param name="value">The dictionary value.</param>
+    public void AppendEntry(string key, string value)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        ArgumentNullException.ThrowIfNull(value);
+
+        var flags = ContainsKey(key)
+            ? ffmpeg.AV_DICT_APPEND
+            : 0;
+
+        var dictionary = Target;
+        try
+        {
+            var result = ffmpeg.av_dict_set(&dictionary, key, value, flags);
+            FFException.ThrowIfNegative(result);
+        }
+        finally
+        {
+            Update(dictionary);
+        }
+    }
+
+    /// <summary>
+    /// Iterates over the entries and returns it as a list.
+    /// </summary>
+    /// <returns>A list of entries currently stored in the dictionary.</returns>
     private IReadOnlyList<FFDictionaryEntry> GetEntries()
     {
         if (IsNull)
@@ -166,4 +232,26 @@ public unsafe class FFDictionary :
     /// <inheritdoc />
     protected override unsafe void ReleaseInternal(AVDictionary* target) =>
         ffmpeg.av_dict_free(&target);
+
+    /// <summary>
+    /// Releases current dictionary allocation (if allocated) and creates
+    /// a new empty dictionary pointer.
+    /// </summary>
+    private void AllocateEmpty()
+    {
+        AVDictionary* dictionary = Target is null ? null : Target;
+
+        try
+        {
+            if (dictionary is not null)
+                ffmpeg.av_dict_free(&dictionary);
+
+            var result = ffmpeg.av_dict_set(&dictionary, string.Empty, null, default);
+            FFException.ThrowIfNegative(result);
+        }
+        finally
+        {
+            Update(dictionary);
+        }
+    }
 }

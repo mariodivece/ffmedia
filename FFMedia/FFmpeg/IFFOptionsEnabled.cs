@@ -29,5 +29,5 @@ public interface IFFOptionsEnabled :
     /// Gets the child options-enabled object currently associated with
     /// this object.
     /// </summary>
-    IReadOnlyList<FFOptionsStore> CurrentChildren { get; }
+    IReadOnlyList<IFFOptionsEnabled> CurrentChildren { get; }
 }

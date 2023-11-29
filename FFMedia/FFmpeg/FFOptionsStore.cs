@@ -1,16 +1,17 @@
-﻿namespace FFmpeg;
+﻿using System.Collections.Concurrent;
+
+namespace FFmpeg;
 
 /// <summary>
 /// Represents a wrapper for  data structures with AV-options enabled functionality.
 /// Such structures must have a <see cref="AVClass"/> pointer as their first defined element.
 /// This is a proxy class for implementing the <see cref="IFFOptionsEnabled"/> interface.
 /// </summary>
-public sealed unsafe class FFOptionsStore :
+internal sealed unsafe class FFOptionsStore :
     NativeReference,
     IFFOptionsEnabled
 {
-    private static readonly Dictionary<Type, bool> MediaClassField = new(16);
-    private static readonly object SyncRoot = new();
+    private static readonly ConcurrentDictionary<Type, bool> MediaClassFields = new();
 
     /// <summary>
     /// Creates an instance of the <see cref="FFOptionsStore"/> class.
@@ -64,7 +65,7 @@ public sealed unsafe class FFOptionsStore :
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<FFOptionsStore> CurrentChildren
+    public IReadOnlyList<IFFOptionsEnabled> CurrentChildren
     {
         get
         {
@@ -102,31 +103,37 @@ public sealed unsafe class FFOptionsStore :
     /// <param name="obj">The data structure wrapper to cast as </param>
     /// <param name="optionsObject"></param>
     /// <returns></returns>
-    public static bool TryWrap<T>(INativeReference<T> obj,[MaybeNullWhen(false)] out IFFOptionsEnabled optionsObject)
+    public static bool TryWrap<T>(INativeReference<T> obj, [MaybeNullWhen(false)] out IFFOptionsEnabled optionsObject)
         where T : unmanaged
     {
         optionsObject = null;
         if (obj is null || obj.IsNull) return false;
-        if (!CheckIsAVOptionsEnabled<T>())
+        if (!IsAVOptionsEnabled<T>())
             return false;
 
         optionsObject = new FFOptionsStore(obj.ToPointer());
         return true;
     }
 
-    private static bool CheckIsAVOptionsEnabled<TStruct>()
+    /// <summary>
+    /// Checks if the given structure type represents an AVOPtions-enabled
+    /// structure. Uses a non-blocking cache for fast access.
+    /// </summary>
+    /// <typeparam name="TStruct">The structure to check for the <see cref="AVClass"/> field.</typeparam>
+    /// <returns>True if compatible. Otherwise, false.</returns>
+    private static bool IsAVOptionsEnabled<TStruct>()
         where TStruct : unmanaged
     {
-        lock (SyncRoot)
+        if (!MediaClassFields.TryGetValue(typeof(TStruct), out var isValid))
         {
-            if (!MediaClassField.TryGetValue(typeof(TStruct), out var isValid))
-            {
-                var fields = typeof(TStruct).GetFields();
-                isValid = fields.Length > 0 && fields[0].FieldType == typeof(AVClass*);
-                MediaClassField[typeof(TStruct)] = isValid;
-            }
+            var fields = typeof(TStruct).GetFields();
+            isValid = fields is not null
+                && fields.Length > 0
+                && fields[0].FieldType == typeof(AVClass*);
 
-            return isValid;
+            MediaClassFields[typeof(TStruct)] = isValid;
         }
+
+        return isValid;
     }
 }

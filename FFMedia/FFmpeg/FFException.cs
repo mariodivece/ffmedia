@@ -5,6 +5,38 @@
 /// </summary>
 public class FFException : Exception
 {
+    private static readonly int DefaultErrorCode = ffmpeg.AVERROR(ffmpeg.EINVAL);
+
+    /// <summary>
+    /// Creates a new instance of the <see cref="FFException"/> class.
+    /// </summary>
+    public FFException()
+        : this(DefaultErrorCode)
+    {
+        // placeholder
+    }
+
+    /// <summary>
+    /// Creates a new instance of the <see cref="FFException"/> class.
+    /// </summary>
+    /// <param name="message">The error message.</param>
+    public FFException(string message)
+        : this(DefaultErrorCode, message)
+    {
+        // placeholder
+    }
+
+    /// <summary>
+    /// Creates a new instance of the <see cref="FFException"/> class.
+    /// </summary>
+    /// <param name="message">The error message.</param>
+    /// <param name="innerException">The inner exception.</param>
+    public FFException(string message, Exception innerException)
+        : this(DefaultErrorCode, message, innerException)
+    {
+        // placeholder
+    }
+
     /// <summary>
     /// Creates a new instance of the <see cref="FFException"/> class.
     /// </summary>

@@ -44,7 +44,9 @@ public unsafe sealed class FFMediaClass(AVClass* target) :
     /// Gets the name of the class; usually it is the same name as the context structure
     /// type to which the <see cref="AVClass"/> is associated.
     /// </summary>
-    public string Name => IsNull ? string.Empty : NativeExtensions.ReadString(Target->class_name) ?? string.Empty;
+    public string Name => IsNull
+        ? string.Empty
+        : NativeExtensions.ReadString(Target->class_name) ?? string.Empty;
 
     /// <summary>
     /// Gets the LIBAVUTIL_VERSION with which this structure was created.
