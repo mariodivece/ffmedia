@@ -28,19 +28,19 @@ public unsafe interface INativeFrame :
     /// Gets the Presentation timestamp in
     /// time base units (time when frame should be shown to user).
     /// </summary>
-    long? Pts { get; }
+    long? PtsUnits { get; }
 
     /// <summary>
     /// Gets the DTS copied from the AVPacket that triggered returning this frame. (if frame threading isn't used)
     /// This is also the Presentation time of this <see cref="AVFrame"/> calculated from only <see cref="AVPacket.dts"/>
     /// values without pts values.
     /// </summary>
-    long? PacketDts { get; }
+    long? PacketDtsUnits { get; }
 
     /// <summary>
     /// Gets the frame timestamp estimated using various heuristics, in stream time base units.
     /// </summary>
-    long? BestEffortPts { get; }
+    long? BestEffortPtsUnits { get; }
 
     /// <summary>
     /// Gets the pointers to the data planes/channels.

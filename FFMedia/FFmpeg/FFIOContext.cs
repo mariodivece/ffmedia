@@ -30,7 +30,7 @@ public unsafe sealed class FFIOContext :
     /// Gets the current byte position being read.
     /// Returns an error code (negative) for failure.
     /// </summary>
-    public long BytePosition => Target is null
+    public long Position => Target is null
         ? ffmpeg.AVERROR(ffmpeg.EINVAL) 
         : ffmpeg.avio_tell(Target);
 

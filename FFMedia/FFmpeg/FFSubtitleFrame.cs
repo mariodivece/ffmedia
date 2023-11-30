@@ -7,8 +7,6 @@ public unsafe class FFSubtitleFrame :
     NativeTrackedReferenceBase<AVSubtitle>,
     INativeFrame
 {
-    
-
     /// <summary>
     /// Initializes a new instance of the <see cref="FFSubtitleFrame"/> class.
     /// Allocates a new <see cref="AVFrame"/>.
@@ -24,15 +22,23 @@ public unsafe class FFSubtitleFrame :
     /// <inheritdoc />
     public AVMediaType MediaType => AVMediaType.AVMEDIA_TYPE_SUBTITLE;
 
+    TimeExtent PresentationTime => Target->pts.IsValidTimestamp()
+        ? Target->pts.ToSeconds()
+        : TimeExtent.Zero;
+
     /// <summary>
     /// Gets the subtitle start display time.
+    /// The returned value already has <see cref="PresentationTime"/> added in.
     /// </summary>
-    public TimeExtent StartDisplayTime => ((long)Target->start_display_time).ToSeconds(Constants.SubtitlesTimeBase);
+    public TimeExtent StartDisplayTime => PresentationTime +
+        ((long)Target->start_display_time).ToSeconds(Constants.SubtitlesTimeBase);
 
     /// <summary>
     /// Gets the subtitle end display time.
+    /// The returned value already has <see cref="PresentationTime"/> added in.
     /// </summary>
-    public TimeExtent EndDisplayTime => ((long)Target->end_display_time).ToSeconds(Constants.SubtitlesTimeBase);
+    public TimeExtent EndDisplayTime => PresentationTime +
+        ((long)Target->end_display_time).ToSeconds(Constants.SubtitlesTimeBase);
 
     /// <summary>
     /// Gest the subtitle display duration, derived from <see cref="StartDisplayTime"/> and
@@ -61,10 +67,10 @@ public unsafe class FFSubtitleFrame :
     #region INativeFrame (Hide most of the implementation because it is useless)
 
     /// <inheritdoc />
-    public long? Pts => Target->pts.ToNullable();
+    public long? PtsUnits => Target->pts.ToNullable();
 
     /// <inheritdoc />
-    public long? BestEffortPts => Target->pts.ToNullable();
+    public long? BestEffortPtsUnits => Target->pts.ToNullable();
 
 #pragma warning disable CA1033
 
@@ -72,7 +78,7 @@ public unsafe class FFSubtitleFrame :
 
     byte_ptr8 INativeFrame.Data => default;
 
-    long? INativeFrame.PacketDts => Target->pts.ToNullable();
+    long? INativeFrame.PacketDtsUnits => Target->pts.ToNullable();
 
     byte** INativeFrame.ExtendedData => null;
 

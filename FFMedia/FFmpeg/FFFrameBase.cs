@@ -45,13 +45,13 @@ public unsafe abstract class FFFrameBase :
     public byte_ptr8 Data => Target is not null ? Target->data : default;
 
     /// <inheritdoc />
-    public long? Pts => Target is not null ? Target->pts.ToNullable() : default;
+    public long? PtsUnits => Target is not null ? Target->pts.ToNullable() : default;
 
     /// <inheritdoc />
-    public long? PacketDts => Target is not null ? Target->pkt_dts.ToNullable() : default;
+    public long? PacketDtsUnits => Target is not null ? Target->pkt_dts.ToNullable() : default;
 
     /// <inheritdoc />
-    public long? BestEffortPts => Target is not null ? Target->best_effort_timestamp.ToNullable() : default;
+    public long? BestEffortPtsUnits => Target is not null ? Target->best_effort_timestamp.ToNullable() : default;
 
     /// <inheritdoc />
     public byte** ExtendedData => Target is not null ? Target->extended_data : default;

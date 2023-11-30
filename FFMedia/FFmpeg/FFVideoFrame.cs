@@ -67,26 +67,42 @@ public unsafe class FFVideoFrame :
         ? IVideoFrame.DefaultPixelAspectRatio
         : Target->sample_aspect_ratio.Normalize();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets a value indicating whether this frame is a keyframe.
+    /// </summary>
     public bool IsKeyFrame => Target->key_frame.ToBool();
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets the picture type.
+    /// </summary>
     public AVPictureType PictureType => Target->pict_type;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets the picture number im bitstream order.
+    /// </summary>
     public int CodedPictureNumber => Target->coded_picture_number;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets the picture number in display order.
+    /// </summary>
     public int DisplayPictureNumber => Target->display_picture_number;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets a value indicating how much the picture must be delayed.
+    /// extra_delay = repeat_pict / (2*fps)
+    /// </summary>
     public int RepeatCount => Target->repeat_pict;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets a value indicating whether the picture is interlaced.
+    /// </summary>
     public bool IsInterlaced => Target->interlaced_frame.ToBool();
 
-    /// <inheritdoc />
-    public bool IsTopFieldFirst => Target->top_field_first.ToBool();
+    /// <summary>
+    /// Gets a value indicating whether the picture is interlaced
+    /// and the top frame is displayed first.
+    /// </summary>
+    public bool IsTopFieldFirst => IsInterlaced && Target->top_field_first.ToBool();
 
     /// <inheritdoc />
     public int BufferLength => RowBytes * PixelHeight;
