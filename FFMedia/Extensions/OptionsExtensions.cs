@@ -52,17 +52,64 @@ public static unsafe class OptionsExtensions
     public static bool HasOption(this IFFOptionsEnabled store, string optionName, bool searchChildren) =>
         store.TryFindOption(optionName, searchChildren, out _);
 
+    /// <summary>
+    /// Sets an option value. Will throw on error.
+    /// </summary>
+    /// <param name="store">The options-enabled object.</param>
+    /// <param name="optionName">The option name.</param>
+    /// <param name="searchChildren">Searches for child options first.</param>
+    /// <param name="value">The value to set the option to.</param>
     public static void SetOptionValue(this IFFOptionsEnabled store, string optionName, bool searchChildren, string? value)
     {
-        ArgumentNullException.ThrowIfNull(store);
-        ObjectDisposedException.ThrowIf(store.IsNull, store);
-        ArgumentException.ThrowIfNullOrWhiteSpace(optionName, nameof(optionName));
-
-        var searchFlags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : default;
+        var searchFlags = store.PrepareOptionFlags(optionName, searchChildren);
         var resultCode = ffmpeg.av_opt_set(store.ToPointer(), optionName, value, searchFlags);
         FFException.ThrowIfNegative(resultCode, $"Failed to set option value for '{optionName}'.");
     }
 
+    /// <summary>
+    /// Sets an option value. Will throw on error.
+    /// </summary>
+    /// <param name="store">The options-enabled object.</param>
+    /// <param name="optionName">The option name.</param>
+    /// <param name="searchChildren">Searches for child options first.</param>
+    /// <param name="value">The value to set the option to.</param>
+    public static void SetOptionValue(this IFFOptionsEnabled store, string optionName, bool searchChildren, int value)
+    {
+        var searchFlags = store.PrepareOptionFlags(optionName, searchChildren);
+        var resultCode = ffmpeg.av_opt_set_int(store.ToPointer(), optionName, value, searchFlags);
+        FFException.ThrowIfNegative(resultCode, $"Failed to set option value for '{optionName}'.");
+    }
+
+    /// <summary>
+    /// Sets an option to a list of values. Will throw on error.
+    /// </summary>
+    /// <param name="store">The options-enabled object.</param>
+    /// <param name="optionName">The option name.</param>
+    /// <param name="searchChildren">Searches for child options first.</param>
+    /// <param name="values">The values to set.</param>
+    public static void SetOptionValues<T>(this IFFOptionsEnabled store, string optionName, bool searchChildren, T[] values)
+        where T : unmanaged
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Length == 0) return;
+        var searchFlags = store.PrepareOptionFlags(optionName, searchChildren);
+
+        var pinnedValues = stackalloc T[values.Length];
+        for (var i = 0; i < values.Length; i++)
+            pinnedValues[i] = values[i];
+
+        var resultCode = ffmpeg.av_opt_set_bin(store.ToPointer(), optionName, (byte*)pinnedValues, values.Length * sizeof(T), searchFlags);
+        FFException.ThrowIfNegative(resultCode, $"Failed to set option value for '{optionName}'.");
+    }
+
+    /// <summary>
+    /// Attempts to set an option value.
+    /// </summary>
+    /// <param name="store">The options-enabled object.</param>
+    /// <param name="optionName">The option name.</param>
+    /// <param name="searchChildren">Searches for child options first.</param>
+    /// <param name="value">The value to set.</param>
+    /// <returns>True if succeeded. False otherwise.</returns>
     public static bool TrySetOptionValue(this IFFOptionsEnabled store, string optionName, bool searchChildren, string? value)
     {
         if (store is null || store.IsNull || string.IsNullOrWhiteSpace(optionName))
@@ -73,20 +120,72 @@ public static unsafe class OptionsExtensions
         return resultCode == 0;
     }
 
+    /// <summary>
+    /// Attempts to set an option value.
+    /// </summary>
+    /// <param name="store">The options-enabled object.</param>
+    /// <param name="optionName">The option name.</param>
+    /// <param name="searchChildren">Searches for child options first.</param>
+    /// <param name="value">The value to set.</param>
+    /// <returns>True if succeeded. False otherwise.</returns>
+    public static bool TrySetOptionValue(this IFFOptionsEnabled store, string optionName, bool searchChildren, int value)
+    {
+        if (store is null || store.IsNull || string.IsNullOrWhiteSpace(optionName))
+            return false;
+
+        var searchFlags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : default;
+        var resultCode = ffmpeg.av_opt_set_int(store.ToPointer(), optionName, value, searchFlags);
+        return resultCode == 0;
+    }
+
+    /// <summary>
+    /// Attempts to set an option value.
+    /// </summary>
+    /// <param name="store">The options-enabled object.</param>
+    /// <param name="optionName">The option name.</param>
+    /// <param name="searchChildren">Searches for child options first.</param>
+    /// <param name="values">The values to set.</param>
+    public static bool TrySetOptionValues<T>(this IFFOptionsEnabled store, string optionName, bool searchChildren, T[] values)
+        where T : unmanaged
+    {
+        if (store is null || store.IsNull || string.IsNullOrWhiteSpace(optionName) || values is null || values.Length == 0)
+            return false;
+
+        var searchFlags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : default;
+
+        var pinnedValues = stackalloc T[values.Length];
+        for (var i = 0; i < values.Length; i++)
+            pinnedValues[i] = values[i];
+
+        var resultCode = ffmpeg.av_opt_set_bin(store.ToPointer(), optionName, (byte*)pinnedValues, values.Length * sizeof(T), searchFlags);
+        return resultCode == 0;
+    }
+
+    /// <summary>
+    /// Gets the value of an option. Will throw on error.
+    /// </summary>
+    /// <param name="store">The options-enabled object.</param>
+    /// <param name="optionName">The option name.</param>
+    /// <param name="searchChildren">Searches for child options first.</param>
+    /// <returns>The option value.</returns>
     public static string GetOptionValue(this IFFOptionsEnabled store, string optionName, bool searchChildren)
     {
-        ArgumentNullException.ThrowIfNull(store);
-        ObjectDisposedException.ThrowIf(store.IsNull, store);
-        ArgumentException.ThrowIfNullOrWhiteSpace(optionName, nameof(optionName));
-
+        var searchFlags = store.PrepareOptionFlags(optionName, searchChildren);
         byte* stringValuePointer;
-        var searchFlags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : default;
         var resultCode = ffmpeg.av_opt_get(store.ToPointer(), optionName, searchFlags, &stringValuePointer);
 
         FFException.ThrowIfNegative(resultCode, $"Failed to get option value for '{optionName}'.");
         return NativeExtensions.ReadString(stringValuePointer) ?? string.Empty;
     }
 
+    /// <summary>
+    /// Attempts to get the value of an option.
+    /// </summary>
+    /// <param name="store">The options-enabled object.</param>
+    /// <param name="optionName">The option name.</param>
+    /// <param name="searchChildren">Searches for child options first.</param>
+    /// <param name="value">The value of the option.</param>
+    /// <returns>True if success. False otherwise.</returns>
     public static bool TryGetOptionValue(this IFFOptionsEnabled store, string optionName,
         bool searchChildren, [MaybeNullWhen(false)] out string? value)
     {
@@ -107,4 +206,14 @@ public static unsafe class OptionsExtensions
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int PrepareOptionFlags(this IFFOptionsEnabled store, string optionName, bool searchChildren)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        ObjectDisposedException.ThrowIf(store.IsNull, store);
+        ArgumentException.ThrowIfNullOrWhiteSpace(optionName, nameof(optionName));
+
+        var searchFlags = searchChildren ? ffmpeg.AV_OPT_SEARCH_CHILDREN : default;
+        return searchFlags;
+    }
 }

@@ -9,7 +9,7 @@ public unsafe sealed class FFChapterSet :
     /// <summary>
     /// Initializes a new instance of the <see cref="FFChapterSet"/> class.
     /// </summary>
-    /// <param name="parent"></param>
+    /// <param name="parent">The owning format context</param>
     public FFChapterSet(FFFormatContext parent)
         : base(parent)
     {

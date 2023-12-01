@@ -18,31 +18,14 @@ internal static unsafe class WaveExtensions
     /// allowing to rebuild the same channel layout, except for opaque pointers.
     /// </summary>
     /// <param name="layout">The channel layout.</param>
-    /// <returns>The string descriptor.</returns>
-    public static string? Describe(this AVChannelLayout layout)
+    /// <returns>The string description.</returns>
+    public static string Describe(this AVChannelLayout layout)
     {
-#pragma warning disable CA2014 // Do not use stackalloc in loops: This is fine because the loop only retries once.
-
-        const int BufferSize = 2048;
-        var currentAlloc = BufferSize;
-        var requestedAlloc = BufferSize;
-
-        while (currentAlloc <= requestedAlloc)
-        {
-            var output = stackalloc byte[currentAlloc];
-            requestedAlloc = ffmpeg.av_channel_layout_describe(&layout, output, (ulong)currentAlloc);
-
-            if (requestedAlloc < 0)
-                break;
-
-            if (requestedAlloc <= currentAlloc)
-                return ((nint)output).ReadString();
-
-            currentAlloc = requestedAlloc;
-        }
-
-        return null;
-#pragma warning restore CA2014 // Do not use stackalloc in loops
+        using var bp = new FFBPrint();
+        var resultCode = ffmpeg.av_channel_layout_describe_bprint(&layout, bp.Target);
+        
+        FFException.ThrowIfNegative(resultCode);
+        return bp.ToString();
     }
 
     public static string? ToName(this AVSampleFormat sampleFormat)
