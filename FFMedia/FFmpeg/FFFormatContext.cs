@@ -138,7 +138,7 @@ public unsafe sealed class FFFormatContext :
             var isRealtimeProtocol =
                 url.StartsWith("RTP:", StringComparison.Ordinal) ||
                 url.StartsWith("UDP:", StringComparison.Ordinal);
-            
+
             return IO is not null && !IO.IsNull && isRealtimeProtocol;
         }
     }
@@ -146,10 +146,28 @@ public unsafe sealed class FFFormatContext :
     public int SeekFile(long seekTargetMin, long seekTarget, long seekTargetMax, int seekFlags = 0) =>
         ffmpeg.avformat_seek_file(Target, -1, seekTargetMin, seekTarget, seekTargetMax, seekFlags);
 
-    public int ReadFrame(out FFPacket packet)
+    /// <summary>
+    /// Attempts to read the next packet as read from the input.
+    /// </summary>
+    /// <param name="packet">The read packet.</param>
+    /// <returns>True on success and false on failure.</returns>
+    public bool TryReadPacket([MaybeNullWhen(false)] out FFPacket packet)
     {
+        packet = null;
+        if (IsNull)
+            return false;
+
         packet = new FFPacket();
-        return ffmpeg.av_read_frame(Target, packet.Target);
+        var resultCode = ffmpeg.av_read_frame(Target, packet.Target);
+
+        if (resultCode < 0)
+        {
+            packet.Dispose();
+            packet = null;
+            return false;
+        }
+
+        return true;
     }
 
     public void OpenInput(string filePath, FFInputFormat format, FFDictionary formatOptions)
@@ -188,7 +206,7 @@ public unsafe sealed class FFFormatContext :
     /// </summary>
     public void InjectGlobalSideData()
     {
-        if (Target is null) return;
+        if (IsNull) return;
         ffmpeg.av_format_inject_global_side_data(Target);
     }
 
