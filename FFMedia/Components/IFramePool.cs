@@ -20,7 +20,7 @@ public interface IFramePool<TMedia> :
     /// </summary>
     /// <param name="frame">The leased frame.</param>
     /// <returns>True if the operation succeeds. False otherwise.</returns>
-    bool TryAcquireFrameLease([MaybeNullWhen(false)]out TMedia? frame);
+    bool TryAcquireFrameLease([MaybeNullWhen(false)] out TMedia? frame);
 
     /// <summary>
     /// Returns a frame reference that was previously leased.

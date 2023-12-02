@@ -1,20 +1,17 @@
-﻿namespace FFMedia;
+﻿using Microsoft.Extensions.DependencyInjection;
+
+namespace FFMedia;
 
 public class MediaContainerBuilder
 {
-    private MediaOptions? Options;
+    public IServiceCollection Services { get; } = new ServiceCollection();
 
-    public MediaContainerBuilder WithOptions(MediaOptions options)
+    public async Task<MediaContainer> OpenAsync(Uri uri)
     {
-        Options = options;
-        return this;
-    }
-
-    public MediaContainer Open(Uri uri)
-    {
-        var container = new MediaContainer(Options ?? new());
-        container.Open();
-
+        var providerFactory = new DefaultServiceProviderFactory();
+        var provider = providerFactory.CreateServiceProvider(Services);
+        var container = new MediaContainer(provider);
+        await container.OpenAsync(uri.ToString()).ConfigureAwait(false);
         return container;
     }
 

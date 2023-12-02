@@ -1,4 +1,6 @@
-﻿namespace FFMedia;
+﻿using Microsoft.Extensions.DependencyInjection;
+
+namespace FFMedia;
 
 /// <summary>
 /// Provides encapsulation of a multimedia steram and its services
@@ -7,22 +9,22 @@
 /// </summary>
 public partial class MediaContainer : IDisposable
 {
-    internal MediaContainer(MediaOptions options)
+    public MediaContainer(IServiceProvider serviceProvider)
     {
-        Options = options;
-    }
-
-    /// <summary>
-    /// Provides access to this container's configuration options.
-    /// </summary>
-    public MediaOptions Options { get; }
-
-    public void Open()
-    {
-        // TODO: Validate Services
-        // TODO: Validate options
-
+        ServiceProvider = serviceProvider;
+        Options = ActivatorUtilities.CreateInstance<IMediaOptions>(serviceProvider) as MediaContainerOptions ??
+            throw new InvalidCastException($"{nameof(IMediaOptions)} must be of type {nameof(MediaContainerOptions)}");
+        // TODO: also can be:
+        // Options = ServiceProvider.GetRequiredService<IMediaOptions>();
 
     }
 
+    public async Task OpenAsync(string url)
+    {
+        await Task.Delay(1000).ConfigureAwait(false);
+    }
+
+    private IServiceProvider ServiceProvider { get; }
+
+    internal MediaContainerOptions Options { get; }
 }

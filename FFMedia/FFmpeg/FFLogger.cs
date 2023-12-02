@@ -39,11 +39,7 @@ public sealed class FFLogger : ILogger
 
     public bool IsEnabled(LogLevel logLevel)
     {
-        
         throw new NotImplementedException();
-
-
-
     }
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
@@ -54,21 +50,4 @@ public sealed class FFLogger : ILogger
     public FFLoggerConfiguration Configuration { get; } = new();
 
     public static FFLogger Instance { get; } = new FFLogger();
-}
-
-public sealed class FFLoggerProvider : ILoggerProvider
-{
-    private FFLoggerProvider()
-    {
-        // placeholder
-    }
-
-    public ILogger CreateLogger(string categoryName) => FFLogger.Instance;
-
-    public void Dispose()
-    {
-        // 
-    }
-
-    public static FFLoggerProvider Instance { get; } = new();
 }

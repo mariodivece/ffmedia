@@ -22,6 +22,7 @@ public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
 
         Container = container;
         FramePool = framePool;
+        Options = container.Options;
 
         MediaType = typeof(TMedia).IsAssignableTo(typeof(IVideoFrame))
             ? AVMediaType.AVMEDIA_TYPE_VIDEO
@@ -33,15 +34,17 @@ public abstract class MediaComponentBase<TMedia> : IMediaComponent<TMedia>
 
         var capacity = MediaType switch
         {
-            AVMediaType.AVMEDIA_TYPE_VIDEO => container.Options.VideoFramesCapacity,
-            AVMediaType.AVMEDIA_TYPE_AUDIO => container.Options.AudioFramesCapacity,
-            AVMediaType.AVMEDIA_TYPE_SUBTITLE => container.Options.SubtitleFramesCapacity,
+            AVMediaType.AVMEDIA_TYPE_VIDEO => Options.VideoFramesCapacity,
+            AVMediaType.AVMEDIA_TYPE_AUDIO => Options.AudioFramesCapacity,
+            AVMediaType.AVMEDIA_TYPE_SUBTITLE => Options.SubtitleFramesCapacity,
             _ => throw new NotImplementedException()
         };
 
-        Frames = new(this, Math.Min(capacity, container.Options.FramesMaxCapacity));
+        Frames = new(this, Math.Min(capacity, Options.FramesMaxCapacity));
         Packets = new();
     }
+
+    protected MediaContainerOptions Options { get; }
 
     /// <inheritdoc />
     public virtual MediaContainer Container { get; }

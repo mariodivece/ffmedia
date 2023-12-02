@@ -1,8 +1,12 @@
-﻿using FFMedia.Extensions;
+﻿using FFMedia.Components;
+using FFMedia.Engine;
+using FFMedia.Extensions;
 using FFMedia.Primitives;
 using FFmpeg;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using FFmpegBindings = FFmpeg.AutoGen.Bindings.DynamicallyLoaded.DynamicallyLoadedBindings;
 
@@ -15,16 +19,36 @@ internal unsafe class Program
     static void Main(string[] args)
     {
         TestStandalondeDI();
-        return;
+        Console.WriteLine($"Result: {Result}");
+    }
 
+    private static void TestMediaOptions()
+    {
+        var options = new MediaContainerOptions() as IMediaOptions;
+        dynamic dynamicOptions = options.AsDynamic();
+
+        dynamicOptions.FrameSizes = new
+        {
+            Video = 16,
+            Audio = 32,
+            Subtitle = 64
+        };
+
+        var audio = (double)dynamicOptions.FrameSizes.Audio;
+        var nonExistent = dynamicOptions.FrameSizes.NonExistent;
+    }
+
+    private static void TestDictionaries()
+    {
         FFmpegBindings.LibrariesPath = @"C:\ffmpeg\x64\";
         FFmpegBindings.Initialize();
-        
-        using var dict = new FFDictionary();
 
-        dict["hello"] = "empty";
-        dict["world"] = string.Empty;
-        dict[""] = "page";
+        using var dict = new FFDictionary
+        {
+            ["hello"] = "empty",
+            ["world"] = string.Empty,
+            [""] = "page"
+        };
 
         dict.Remove(string.Empty);
         dict.Remove("hello");
@@ -43,32 +67,18 @@ internal unsafe class Program
         context.SetOptionValue("bt", true, "50000");
         optionValue = context.GetOptionValue("bt", true);
         Debug.Assert("50000".Equals(optionValue));
-
-        Console.WriteLine($"Result: {Result}");
     }
 
     private static void TestStandalondeDI()
     {
-        var services = new ServiceCollection();
+        var builder = new ContainerBuilder();
+        builder.Services.AddLogging();
+        builder.Logging.ClearProviders();
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ColorLoggerProvider<GreenLogger>>());
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ColorLoggerProvider<BlueLogger>>());        
 
-        // TODO: not sure how to call the configure actions
-        // see: https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.Hosting/src/HostBuilder.cs#L286
-        services.AddLogging(configure =>
-        {
-            // Logging provider not yet working
-            // See: https://learn.microsoft.com/en-us/dotnet/core/extensions/custom-logging-provider
-            configure.ClearProviders();
-            configure.AddProvider(FFLoggerProvider.Instance);
-        });
-
-        // Instead of providers, we just injet directly.
-        services.AddSingleton<ILogger, FFLogger>((s) => FFLogger.Instance);
-
-        var fac = new DefaultServiceProviderFactory();
-        var provider = fac.CreateServiceProvider(services);
-        
-        var instance = ActivatorUtilities.CreateInstance<LoggerEnabled>(provider);
-
+        var container = builder.Build();
+        var injectedInstance = ActivatorUtilities.CreateInstance<LoggerInjected>(container);
     }
 
     private static void TaskBody(ExclusiveLock exclusive, string name)
@@ -109,12 +119,88 @@ internal unsafe class Program
     }
 }
 
-public class LoggerEnabled
+public class ContainerBuilder
 {
-    public LoggerEnabled(ILogger logger)
+    public ContainerBuilder()
     {
-        Logger = logger;
+        Services = new ServiceCollection();
+        Logging = new LoggingBuilder(Services);
     }
 
-    public ILogger Logger { get; }
+    public IServiceCollection Services { get; }
+
+    public ILoggingBuilder Logging { get; }
+
+    public IServiceProvider Build()
+    {
+        var factory = new DefaultServiceProviderFactory();
+        return factory.CreateServiceProvider(Services);
+    }
+}
+
+public class LoggerInjected
+{
+    public LoggerInjected(ILogger<LoggerInjected>? logger)
+    {
+        Logger = logger;
+        Logger?.Log(LogLevel.Information, "Hello {date}", DateTime.UtcNow);
+    }
+
+    public ILogger? Logger { get; }
+}
+
+public class LoggingBuilder : ILoggingBuilder
+{
+    public static readonly object SyncRoot = new();
+
+    public LoggingBuilder(IServiceCollection services)
+    {
+        Services = services;
+    }
+
+    public IServiceCollection Services { get; }
+}
+
+public sealed class ColorLoggerProvider<T> : ILoggerProvider
+    where T : ColorLoggerBase, new()
+{
+    private readonly ConcurrentDictionary<Type, ILogger> _loggers = new();
+
+    public ILogger CreateLogger(string categoryName) =>
+        _loggers.GetOrAdd(typeof(T), new T());
+
+    public void Dispose()
+    {
+        // do nothing.
+    }
+}
+
+public abstract class ColorLoggerBase : ILogger
+{
+    public abstract ConsoleColor Color { get; }
+
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => default;
+
+    public bool IsEnabled(LogLevel logLevel) => true;
+
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    {
+        lock (LoggingBuilder.SyncRoot)
+        {
+            var originalColor = Console.ForegroundColor;
+            Console.ForegroundColor = Color;
+            Console.WriteLine($"[{eventId.Id,2}: {logLevel,-12}] - {formatter(state, exception)}");
+            Console.ForegroundColor = originalColor;
+        }
+    }
+}
+
+public class GreenLogger : ColorLoggerBase
+{
+    public override ConsoleColor Color => ConsoleColor.Green;
+}
+
+public class BlueLogger : ColorLoggerBase
+{
+    public override ConsoleColor Color => ConsoleColor.Blue;
 }
