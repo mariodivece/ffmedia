@@ -27,6 +27,11 @@ public unsafe sealed class FFStream : NativeReferenceBase<AVStream>
     public FFFormatContext FormatContext { get; }
 
     /// <summary>
+    /// Gets this stream's codec media type.
+    /// </summary>
+    public AVMediaType MediaType => CodecParameters.MediaType;
+
+    /// <summary>
     /// Gets or sets via a set of which packets can be discarded at will and do not need to be demuxed.
     /// </summary>
     public AVDiscard DiscardFlags
@@ -35,6 +40,23 @@ public unsafe sealed class FFStream : NativeReferenceBase<AVStream>
         set => Target->discard = value;
     }
 
+    /// <summary>
+    /// Gets the default codec drived from <see cref="CodecParameters"/>.
+    /// </summary>
+    public FFCodec? DefaultCodec
+    {
+        get
+        {
+            var codecId = CodecParameters.CodecId;
+            if (codecId == AVCodecID.AV_CODEC_ID_NONE)
+                return null;
+            
+            var result = FFCodec.FromDecoderId(codecId);
+            result ??= FFCodec.FromEncoderId(codecId);
+
+            return result;
+        }
+    }
     /// <summary>
     /// Gets the codec parameters for this stream.
     /// </summary>

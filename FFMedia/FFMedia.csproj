@@ -34,7 +34,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="6.0.0.2" />
+		<PackageReference Include="FFmpeg.AutoGen.Abstractions" Version="6.1.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
 	</ItemGroup>
 
 </Project>

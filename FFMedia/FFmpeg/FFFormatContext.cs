@@ -92,24 +92,6 @@ public unsafe sealed class FFFormatContext :
         ? NativeExtensions.ReadString(Target->url)
         : default;
 
-    public int FindBestStream(AVMediaType mediaType, int wantedStreamIndex, int relatedStreamIndex) =>
-        ffmpeg.av_find_best_stream(Target, mediaType, wantedStreamIndex, relatedStreamIndex, null, 0);
-
-    public int FindBestVideoStream(int wantedStreamIndex) =>
-        FindBestStream(AVMediaType.AVMEDIA_TYPE_VIDEO, wantedStreamIndex, -1);
-
-    public int FindBestAudioStream(int wantedStreamIndex, int relatedStreamIndex) =>
-        FindBestStream(AVMediaType.AVMEDIA_TYPE_AUDIO, wantedStreamIndex, relatedStreamIndex);
-
-    public int FindBestSubtitleStream(int wantedStreamIndex, int relatedStreamIndex) =>
-        FindBestStream(AVMediaType.AVMEDIA_TYPE_SUBTITLE, wantedStreamIndex, relatedStreamIndex);
-
-    public int ReadPlay() =>
-        ffmpeg.av_read_play(Target);
-
-    public int ReadPause() =>
-        ffmpeg.av_read_pause(Target);
-
     /// <summary>
     /// Gets a value indicating whether the seek method for the input is not known.
     /// </summary>
@@ -143,8 +125,38 @@ public unsafe sealed class FFFormatContext :
         }
     }
 
-    public int SeekFile(long seekTargetMin, long seekTarget, long seekTargetMax, int seekFlags = 0) =>
-        ffmpeg.avformat_seek_file(Target, -1, seekTargetMin, seekTarget, seekTargetMax, seekFlags);
+    /// <summary>
+    /// Attempts to find the best stream for the specified media type.
+    /// </summary>
+    /// <param name="mediaType">The media type.</param>
+    /// <param name="stream">The stream, if found.</param>
+    /// <returns>True if succeess. False if failure.</returns>
+    public bool TryFindBestStream(AVMediaType mediaType, [MaybeNullWhen(false)] out FFStream? stream) =>
+        TryFindBestRelatedStream(mediaType, null, out stream);
+
+    /// <summary>
+    /// Attempts to find the best stream of the specified media type that relates to the the
+    /// given related stream. For example, find the best suitable audio stream for a related
+    /// video stream.
+    /// </summary>
+    /// <param name="mediaType">The stream's media type to find.</param>
+    /// <param name="relatedStream">The stream that relates to the stream being searched for.</param>
+    /// <param name="stream">The stream, if found.</param>
+    /// <returns>True if succeess. False if failure.</returns>
+    public bool TryFindBestRelatedStream(AVMediaType mediaType, FFStream? relatedStream, [MaybeNullWhen(false)] out FFStream? stream)
+    {
+        stream = null;
+        var relatedStreamIndex = relatedStream is null || relatedStream.IsNull ? -1 : relatedStream.StreamIndex;
+        var resultCode = ffmpeg.av_find_best_stream(Target, mediaType, -1, relatedStreamIndex, null, 0);
+
+        if (resultCode >= 0)
+        {
+            stream = new(Target->streams[resultCode], this);
+            return true;
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Attempts to read the next packet as read from the input.
@@ -169,6 +181,16 @@ public unsafe sealed class FFFormatContext :
 
         return true;
     }
+
+
+    public int ReadPlay() =>
+        ffmpeg.av_read_play(Target);
+
+    public int ReadPause() =>
+        ffmpeg.av_read_pause(Target);
+
+    public int SeekFile(long seekTargetMin, long seekTarget, long seekTargetMax, int seekFlags = 0) =>
+        ffmpeg.avformat_seek_file(Target, -1, seekTargetMin, seekTarget, seekTargetMax, seekFlags);
 
     public void OpenInput(string filePath, FFInputFormat format, FFDictionary formatOptions)
     {

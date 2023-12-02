@@ -1,6 +1,8 @@
 ﻿using FFMedia.Extensions;
 using FFMedia.Primitives;
 using FFmpeg;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using FFmpegBindings = FFmpeg.AutoGen.Bindings.DynamicallyLoaded.DynamicallyLoadedBindings;
 
@@ -12,9 +14,12 @@ internal unsafe class Program
 
     static void Main(string[] args)
     {
+        TestStandalondeDI();
+        return;
+
         FFmpegBindings.LibrariesPath = @"C:\ffmpeg\x64\";
         FFmpegBindings.Initialize();
-
+        
         using var dict = new FFDictionary();
 
         dict["hello"] = "empty";
@@ -40,6 +45,30 @@ internal unsafe class Program
         Debug.Assert("50000".Equals(optionValue));
 
         Console.WriteLine($"Result: {Result}");
+    }
+
+    private static void TestStandalondeDI()
+    {
+        var services = new ServiceCollection();
+
+        // TODO: not sure how to call the configure actions
+        // see: https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.Extensions.Hosting/src/HostBuilder.cs#L286
+        services.AddLogging(configure =>
+        {
+            // Logging provider not yet working
+            // See: https://learn.microsoft.com/en-us/dotnet/core/extensions/custom-logging-provider
+            configure.ClearProviders();
+            configure.AddProvider(FFLoggerProvider.Instance);
+        });
+
+        // Instead of providers, we just injet directly.
+        services.AddSingleton<ILogger, FFLogger>((s) => FFLogger.Instance);
+
+        var fac = new DefaultServiceProviderFactory();
+        var provider = fac.CreateServiceProvider(services);
+        
+        var instance = ActivatorUtilities.CreateInstance<LoggerEnabled>(provider);
+
     }
 
     private static void TaskBody(ExclusiveLock exclusive, string name)
@@ -78,4 +107,14 @@ internal unsafe class Program
 
         Console.WriteLine($"{name,-16} Entry: {entryCount,8}, Deny: {denyCount,8} ");
     }
+}
+
+public class LoggerEnabled
+{
+    public LoggerEnabled(ILogger logger)
+    {
+        Logger = logger;
+    }
+
+    public ILogger Logger { get; }
 }
