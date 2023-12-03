@@ -81,4 +81,14 @@ internal static unsafe class NativeExtensions
     /// <returns>True if the flags variable contains one or more flags to match.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool HasFlag(this int flagsVariable, int flagValue) => (flagsVariable & flagValue) != 0;
+
+    /// <summary>
+    /// Sets a given integer flag for a certain variable containing flag values.
+    /// Returns a new value with the specified flags set.
+    /// </summary>
+    /// <param name="flagsVariable">The flags value to set.</param>
+    /// <param name="flagValue">The flags or set of combined flags to set.</param>
+    /// <returns>The flags set.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int SetFlag(this int flagsVariable, int flagValue) => flagsVariable |= flagValue;
 }

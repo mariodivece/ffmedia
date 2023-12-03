@@ -14,6 +14,7 @@ public partial class MediaContainer : IDisposable
         ServiceProvider = serviceProvider;
         Options = ActivatorUtilities.CreateInstance<IMediaOptions>(serviceProvider) as MediaContainerOptions ??
             throw new InvalidCastException($"{nameof(IMediaOptions)} must be of type {nameof(MediaContainerOptions)}");
+
         // TODO: also can be:
         // Options = ServiceProvider.GetRequiredService<IMediaOptions>();
 

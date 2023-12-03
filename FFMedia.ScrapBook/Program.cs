@@ -3,6 +3,7 @@ using FFMedia.Engine;
 using FFMedia.Extensions;
 using FFMedia.Primitives;
 using FFmpeg;
+using FFmpeg.AutoGen.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -18,8 +19,26 @@ internal unsafe class Program
 
     static void Main(string[] args)
     {
-        TestStandalondeDI();
+        TestFFLogger();
         Console.WriteLine($"Result: {Result}");
+    }
+
+    private static void InitFFmpeg()
+    {
+        FFmpegBindings.LibrariesPath = @"C:\ffmpeg\x64\";
+        FFmpegBindings.Initialize();
+    }
+
+    private static void TestFFLogger()
+    {
+        InitFFmpeg();
+        var logger = FFLogger.Instance;
+        logger.OnMessageLogged = (sender, level, message) =>
+        {
+            Console.WriteLine($"{sender.Address}: ({level}) {message}");
+        };
+        ffmpeg.av_log(null, ffmpeg.AV_LOG_INFO, $"And this is some maeesage from the direct API call");
+        logger.LogInformation("This is some cool stuff: {myMessage}", "Says Mario!");
     }
 
     private static void TestMediaOptions()
@@ -40,8 +59,7 @@ internal unsafe class Program
 
     private static void TestDictionaries()
     {
-        FFmpegBindings.LibrariesPath = @"C:\ffmpeg\x64\";
-        FFmpegBindings.Initialize();
+        InitFFmpeg();
 
         using var dict = new FFDictionary
         {
@@ -78,7 +96,9 @@ internal unsafe class Program
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ColorLoggerProvider<BlueLogger>>());        
 
         var container = builder.Build();
-        var injectedInstance = ActivatorUtilities.CreateInstance<LoggerInjected>(container);
+
+        var logger = container.GetRequiredService<ILogger<LoggerInjected>>();
+        var injectedInstance = ActivatorUtilities.CreateInstance<LoggerInjected>(container, @"c:\ffmpeg\x64\");
     }
 
     private static void TaskBody(ExclusiveLock exclusive, string name)
@@ -140,10 +160,10 @@ public class ContainerBuilder
 
 public class LoggerInjected
 {
-    public LoggerInjected(ILogger<LoggerInjected>? logger)
+    public LoggerInjected(string filePath, ILogger<LoggerInjected>? logger)
     {
         Logger = logger;
-        Logger?.Log(LogLevel.Information, "Hello {date}", DateTime.UtcNow);
+        Logger?.Log(LogLevel.Information, "Hello {date} - The File path is {filePath}", DateTime.UtcNow, filePath);
     }
 
     public ILogger? Logger { get; }

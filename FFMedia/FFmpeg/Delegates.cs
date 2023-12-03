@@ -1,4 +1,6 @@
-﻿namespace FFmpeg;
+﻿using Microsoft.Extensions.Logging;
+
+namespace FFmpeg;
 
 /// <summary>
 /// Represents a delegate that is called continuously by <see cref="FFFormatContext"/>.
@@ -13,3 +15,5 @@
 /// and makes such function refurn <see cref="ffmpeg.AVERROR_EXIT"/>.
 /// </returns>
 public delegate int FormatContextInterruptCallback(INativeReference blokingObject);
+
+public delegate void LogCallback(IFFOptionsEnabled source, LogLevel level, string message);

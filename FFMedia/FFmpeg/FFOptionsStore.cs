@@ -19,7 +19,7 @@ internal sealed unsafe class FFOptionsStore :
     /// to create and validate instances of this wrapper/proxy class.
     /// </summary>
     /// <param name="target">The pointer to the object.</param>
-    private FFOptionsStore(void* target)
+    public FFOptionsStore(void* target)
         : base(target)
     {
     }
