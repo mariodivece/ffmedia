@@ -21,9 +21,7 @@ public class MediaContainerBuilder
     public async Task<MediaContainer> OpenAsync(Uri uri)
     {
         ArgumentNullException.ThrowIfNull(uri);
-        var providerFactory = new DefaultServiceProviderFactory();
-        var provider = providerFactory.CreateServiceProvider(Services);
-        var container = new MediaContainer(provider);
+        var container = new MediaContainer(Services);
         await container.OpenAsync(uri.ToString()).ConfigureAwait(false);
         return container;
     }

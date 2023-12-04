@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Collections.Frozen;
 namespace FFmpeg;
 
 /// <summary>
@@ -7,30 +6,8 @@ namespace FFmpeg;
 /// </summary>
 public sealed unsafe class FFLogger : ILogger
 {
-    private static FrozenDictionary<int, LogLevel> NativeToManaged = new Dictionary<int, LogLevel>
-    {
-        { ffmpeg.AV_LOG_TRACE, LogLevel.Trace },
-        { ffmpeg.AV_LOG_DEBUG, LogLevel.Debug },
-        { ffmpeg.AV_LOG_VERBOSE, LogLevel.Debug },
-        { ffmpeg.AV_LOG_INFO, LogLevel.Information },
-        { ffmpeg.AV_LOG_WARNING, LogLevel.Warning },
-        { ffmpeg.AV_LOG_ERROR, LogLevel.Error },
-        { ffmpeg.AV_LOG_FATAL, LogLevel.Critical },
-        { ffmpeg.AV_LOG_PANIC, LogLevel.Critical }
-    }.ToFrozenDictionary();
-    private static FrozenDictionary<LogLevel, int> ManagedToNative = new Dictionary<LogLevel, int>
-    {
-        { LogLevel.Trace, ffmpeg.AV_LOG_TRACE },
-        { LogLevel.Debug, ffmpeg.AV_LOG_VERBOSE },
-        { LogLevel.Information, ffmpeg.AV_LOG_INFO },
-        { LogLevel.Warning, ffmpeg.AV_LOG_WARNING },
-        { LogLevel.Error, ffmpeg.AV_LOG_ERROR },
-        { LogLevel.Critical, ffmpeg.AV_LOG_PANIC },
-    }.ToFrozenDictionary();
-
     private readonly object SyncRoot = new();
     private readonly av_log_set_callback_callback NativeLogCallback;
-    private LogCallback? _OnMessageLogged;
 
     /// <summary>
     /// Gets the signleton instance of the FFmpeg logging subsystem.
@@ -50,6 +27,13 @@ public sealed unsafe class FFLogger : ILogger
             ffmpeg.av_log_set_callback(NativeLogCallback);
         }
     }
+
+    /// <summary>
+    /// Gets or sets event handlers for <see cref="FFLoggerEventArgs"/>.
+    /// If not handlers exists, the dedefault <see cref="ffmpeg.av_log_default_callback(void*, int, string, byte*)"/>
+    /// is called when messages are logged to the ffmpeg library.
+    /// </summary>
+    public event EventHandler<FFLoggerEventArgs>? OnMessageLogged;
 
     /// <summary>
     /// Gets or sets a vaqlue indicating whether this logger
@@ -77,31 +61,28 @@ public sealed unsafe class FFLogger : ILogger
         get
         {
             lock (SyncRoot)
-                return ToManagedLogLevel(ffmpeg.av_log_get_level());
+                return ffmpeg.av_log_get_level().ToManagedLogLevel();
         }
         set
         {
             lock (SyncRoot)
-                ffmpeg.av_log_set_level(ToNativeLogLevel(value));
-        }
-    }
-
-    public LogCallback? OnMessageLogged
-    {
-        get
-        {
-            lock (SyncRoot)
-                return _OnMessageLogged;
-        }
-        set
-        {
-            lock (SyncRoot)
-                _OnMessageLogged = value;
+                ffmpeg.av_log_set_level(value.ToNativeLogLevel());
         }
     }
 
     /// <inheritdoc />
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => default;
+
+    /// <inheritdoc />
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    {
+        lock (SyncRoot)
+        {
+            var message = formatter?.Invoke(state, exception);
+            var nativeLevel = logLevel.ToNativeLogLevel();
+            ffmpeg.av_log(null, nativeLevel, message);
+        }
+    }
 
     /// <inheritdoc />
     public bool IsEnabled(LogLevel logLevel)
@@ -118,50 +99,36 @@ public sealed unsafe class FFLogger : ILogger
         }
     }
 
-    private static int ToNativeLogLevel(LogLevel managedLogLevel) =>
-        !ManagedToNative.TryGetValue(managedLogLevel, out var level)
-            ? ffmpeg.AV_LOG_INFO
-            : level;
-
-    private static LogLevel ToManagedLogLevel(int nativeLogLevel) =>
-        !NativeToManaged.TryGetValue(nativeLogLevel, out var level)
-            ? LogLevel.Information
-            : level;
-
-    /// <inheritdoc />
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-    {
-        lock (SyncRoot)
-        {
-            var message = formatter?.Invoke(state, exception);
-            var level = ToNativeLogLevel(logLevel);
-            ffmpeg.av_log(null, level, message);
-        }
-    }
-
-    private void NativeLogHandler(void* avClass, int level, string messageFormat, byte* variableArgs)
+    /// <summary>
+    /// Called when <see cref="ffmpeg.av_log"/> is called.
+    /// </summary>
+    /// <param name="avClass">The options-enable dobject.</param>
+    /// <param name="nativeLevel">The native log level.</param>
+    /// <param name="messageFormat">The message to format.</param>
+    /// <param name="variableArgs">The native variable arguments.</param>
+    private void NativeLogHandler(void* avClass, int nativeLevel, string messageFormat, byte* variableArgs)
     {
         const int LineSize = 1024;
-
+        
         lock (SyncRoot)
         {
             var externalHandler = OnMessageLogged;
             if (externalHandler is null)
             {
-                ffmpeg.av_log_default_callback(avClass, level, messageFormat, variableArgs);
+                ffmpeg.av_log_default_callback(avClass, nativeLevel, messageFormat, variableArgs);
                 return;
             }
 
             var messageOutput = stackalloc byte[LineSize];
             int printPrefix;
 
-            ffmpeg.av_log_format_line(avClass, level, messageFormat, variableArgs, messageOutput, LineSize, &printPrefix);
+            ffmpeg.av_log_format_line(avClass, nativeLevel, messageFormat, variableArgs, messageOutput, LineSize, &printPrefix);
             var message = NativeExtensions.ReadString(messageOutput) ?? string.Empty;
             var optionsEnabled = avClass is not null
                 ? new FFOptionsStore(avClass)
                 : FFOptionsStore.Empty;
 
-            externalHandler(optionsEnabled, ToManagedLogLevel(level), message);
+            externalHandler.Invoke(this, new(optionsEnabled, nativeLevel.ToManagedLogLevel(), message));
         }
     }
 }

@@ -33,10 +33,11 @@ internal unsafe class Program
     {
         InitFFmpeg();
         var logger = FFLogger.Instance;
-        logger.OnMessageLogged = (sender, level, message) =>
+        logger.OnMessageLogged += (s, e) =>
         {
-            Console.WriteLine($"{sender.Address}: ({level}) {message}");
+            Console.WriteLine($"{e.OptionsObject.Address}: ({e.LogLevel}) {e.Message}");
         };
+
         ffmpeg.av_log(null, ffmpeg.AV_LOG_INFO, $"And this is some maeesage from the direct API call");
         logger.LogInformation("This is some cool stuff: {myMessage}", "Says Mario!");
     }

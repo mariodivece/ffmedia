@@ -9,15 +9,26 @@ namespace FFMedia;
 /// </summary>
 public partial class MediaContainer : IDisposable
 {
-    public MediaContainer(IServiceProvider serviceProvider)
+    public MediaContainer(IServiceCollection services)
     {
-        ServiceProvider = serviceProvider;
-        Options = ActivatorUtilities.CreateInstance<IMediaOptions>(serviceProvider) as MediaContainerOptions ??
+        var importedServices = services is not null && services.Count > 0
+            ? [.. services]
+            : Array.Empty<ServiceDescriptor>();
+        
+        IServiceCollection localServices = new ServiceCollection();
+        foreach (var service in importedServices)
+            localServices.Add(service);
+
+        // Ensure this media container is available as a service to child classes.
+        localServices.AddSingleton((p) => this);
+
+        var providerFactory = new DefaultServiceProviderFactory();
+        ServiceProvider = providerFactory.CreateServiceProvider(localServices);
+        Options = ActivatorUtilities.CreateInstance<IMediaOptions>(ServiceProvider) as MediaContainerOptions ??
             throw new InvalidCastException($"{nameof(IMediaOptions)} must be of type {nameof(MediaContainerOptions)}");
 
         // TODO: also can be:
         // Options = ServiceProvider.GetRequiredService<IMediaOptions>();
-
     }
 
     public async Task OpenAsync(string url)
