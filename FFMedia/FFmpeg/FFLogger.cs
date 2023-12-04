@@ -128,6 +128,7 @@ public sealed unsafe class FFLogger : ILogger
             ? LogLevel.Information
             : level;
 
+    /// <inheritdoc />
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         lock (SyncRoot)
@@ -138,7 +139,6 @@ public sealed unsafe class FFLogger : ILogger
         }
     }
 
-    /// <inheritdoc />
     private void NativeLogHandler(void* avClass, int level, string messageFormat, byte* variableArgs)
     {
         const int LineSize = 1024;
@@ -153,7 +153,7 @@ public sealed unsafe class FFLogger : ILogger
             }
 
             var messageOutput = stackalloc byte[LineSize];
-            int printPrefix = 1;
+            int printPrefix;
 
             ffmpeg.av_log_format_line(avClass, level, messageFormat, variableArgs, messageOutput, LineSize, &printPrefix);
             var message = NativeExtensions.ReadString(messageOutput) ?? string.Empty;
