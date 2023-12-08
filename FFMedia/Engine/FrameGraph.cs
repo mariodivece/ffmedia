@@ -163,30 +163,16 @@ public partial class FrameStore<TMedia>
         /// <inheritdoc />
         public TMedia? FindFrame(TimeExtent startTime)
         {
-            var index = FindFrameIndex(startTime);
-            return index < 0
-                ? null
-                : Frames[index];
+            var keyIndex = Frames.Keys.IndexOfClosest(startTime, out var frameKey);
+            if (keyIndex < 0)
+                return null;
+
+            return Frames[frameKey];
         }
 
         /// <inheritdoc />
-        public int FindFrameIndex(TimeExtent startTime)
-        {
-            if (IsEmpty || startTime.IsNaN)
-                return -1;
-
-            var frameIndex = 0;
-            var frameTimes = Frames.Keys;
-            for (var fi = 0; fi < frameTimes.Count; fi++)
-            {
-                if (frameTimes[fi] > startTime)
-                    break;
-
-                frameIndex = fi;
-            }
-
-            return frameIndex;
-        }
+        public int FindFrameIndex(TimeExtent startTime) =>
+            Frames.Keys.IndexOfClosest(startTime, out _);
 
         /// <inheritdoc />
         public double FindRelativePosition(TimeExtent time)

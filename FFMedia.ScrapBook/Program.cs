@@ -122,27 +122,27 @@ internal unsafe class Program
         var lookupValue = 57;
 
         var t2 = new TimeExtent[] { 1, 2, 3, 4 };
-        t2.TrySlidingValueSearch(2, out var cv);
+        t2.IndexOfClosest(2, out var cv);
 
-        var success = items.TrySlidingValueSearch(lookupValue, out var result);
+        var success = items.IndexOfClosest(lookupValue, out var result);
 
         lookupValue = 4049;
-        success = items.TrySlidingValueSearch(lookupValue, out result);
+        success = items.IndexOfClosest(lookupValue, out result);
 
         lookupValue = 0;
-        success = items.TrySlidingValueSearch(lookupValue, out result);
+        success = items.IndexOfClosest(lookupValue, out result);
 
         lookupValue = 1;
-        success = items.TrySlidingValueSearch(lookupValue, out result);
+        success = items.IndexOfClosest(lookupValue, out result);
 
         lookupValue = -1;
-        success = items.TrySlidingValueSearch(lookupValue, out result);
+        success = items.IndexOfClosest(lookupValue, out result);
 
         lookupValue = items.Last();
-        success = items.TrySlidingValueSearch(lookupValue, out result);
+        success = items.IndexOfClosest(lookupValue, out result);
 
         lookupValue = items.Last() + 1;
-        success = items.TrySlidingValueSearch(lookupValue, out result);
+        success = items.IndexOfClosest(lookupValue, out result);
     }
 
     private static void TaskBody(ExclusiveLock exclusive, string name)
