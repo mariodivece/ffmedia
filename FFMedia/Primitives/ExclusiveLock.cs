@@ -128,7 +128,7 @@ public sealed class ExclusiveLock : IDisposable
     }
 
     /// <summary>
-    /// Implements the locks released.
+    /// Implements the lock releaser as a <see cref="IDisposable"/>.
     /// Dispose causes the necessary side-effects to the parent.
     /// </summary>
     private sealed class LockReleaser : IDisposable

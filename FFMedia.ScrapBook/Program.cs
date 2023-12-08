@@ -19,6 +19,7 @@ internal unsafe class Program
 
     static void Main(string[] args)
     {
+        TestBinaryLookup();
         TestFFLogger();
         Console.WriteLine($"Result: {Result}");
     }
@@ -94,12 +95,39 @@ internal unsafe class Program
         builder.Services.AddLogging();
         builder.Logging.ClearProviders();
         builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ColorLoggerProvider<GreenLogger>>());
-        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ColorLoggerProvider<BlueLogger>>());        
+        builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ColorLoggerProvider<BlueLogger>>());
 
         var container = builder.Build();
 
         var logger = container.GetRequiredService<ILogger<LoggerInjected>>();
         var injectedInstance = ActivatorUtilities.CreateInstance<LoggerInjected>(container, @"c:\ffmpeg\x64\");
+    }
+
+    private static void TestBinaryLookup()
+    {
+        const int ItemCount = 4000;
+        var itemList = new List<int>(ItemCount);
+        while (itemList.Count < ItemCount)
+        {
+            var nextItem = Random.Shared.Next(0, ItemCount) * 5;
+            if (itemList.Contains(nextItem))
+                continue;
+
+            itemList.Add(nextItem);
+        }
+
+        var items = itemList.ToArray();
+        Array.Sort(items);
+
+        var lookupValue = 57;
+
+        var t2 = new TimeExtent[] { 1, 2, 3, 4 };
+        t2.TrySlidingLookup(2, out var cv);
+
+        var success = items.TrySlidingLookup(lookupValue, out var result);
+
+        lookupValue = 4057;
+        success = items.TrySlidingLookup(lookupValue, out result);
     }
 
     private static void TaskBody(ExclusiveLock exclusive, string name)
