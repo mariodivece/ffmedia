@@ -31,14 +31,14 @@ public static partial class Helper
             ? new Span<T>(array)
             : sortedValues is List<T> list
             ? CollectionsMarshal.AsSpan(list)
-            : default;
+            : Span<T>.Empty;
 
         var isFastAccess = spanValues.Length > 0;
         var valueCount = isFastAccess ? spanValues.Length : sortedValues.Count;
         var firstIndex = 0;
         var lastIndex = valueCount - 1;
         var midIndex = (firstIndex + lastIndex) / 2;
-        var currentValue = isFastAccess ? spanValues[midIndex] : sortedValues[midIndex];
+        var currentValue = sortedValues.GetCurrentValue(midIndex, spanValues, isFastAccess);
         var compareResult = searchValue.CompareTo(currentValue);
         var iterationCount = 0;
 
@@ -52,20 +52,26 @@ public static partial class Helper
 
             midIndex = (firstIndex + lastIndex) / 2;
             valueCount = lastIndex - firstIndex + 1;
-            currentValue = isFastAccess ? spanValues[midIndex] : sortedValues[midIndex];
+            currentValue = sortedValues.GetCurrentValue(midIndex, spanValues, isFastAccess);
             compareResult = searchValue.CompareTo(currentValue);
             iterationCount++;
         }
 
         var resultIndex = lastIndex;
-        currentValue = isFastAccess ? spanValues[resultIndex] : sortedValues[resultIndex];
-        if (searchValue.CompareTo(currentValue) < 0)
+        closestValue = sortedValues.GetCurrentValue(resultIndex, spanValues, isFastAccess);
+        if (searchValue.CompareTo(closestValue) < 0)
+        {
             resultIndex = firstIndex;
+            closestValue = sortedValues.GetCurrentValue(resultIndex, spanValues, isFastAccess);
+        }
 
-        closestValue = isFastAccess ? spanValues[resultIndex] : sortedValues[resultIndex];
         iterationCount++;
 
         Debug.WriteLine($"Fast Access: {isFastAccess}, Value Count: {sortedValues.Count}, Comparisons: {iterationCount}, Search: {searchValue}, Found: {closestValue}, Index {resultIndex}");
         return resultIndex;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static T GetCurrentValue<T>(this IList<T> sortedValues, int index, Span<T> spanValues, bool isFastAccess) =>
+        isFastAccess ? spanValues[index] : sortedValues[index];
 }
