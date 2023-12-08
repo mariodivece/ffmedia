@@ -37,38 +37,71 @@ public static partial class Helper
         var valueCount = isFastAccess ? spanValues.Length : sortedValues.Count;
         var firstIndex = 0;
         var lastIndex = valueCount - 1;
-        var midIndex = (firstIndex + lastIndex) / 2;
-        var currentValue = sortedValues.GetCurrentValue(midIndex, spanValues, isFastAccess);
-        var compareResult = searchValue.CompareTo(currentValue);
         var iterationCount = 0;
 
-        while (valueCount > 2)
+        try
         {
-            if (compareResult >= 0)
-                firstIndex = midIndex;
-
-            if (compareResult <= 0)
-                lastIndex = midIndex;
-
-            midIndex = (firstIndex + lastIndex) / 2;
-            valueCount = lastIndex - firstIndex + 1;
-            currentValue = sortedValues.GetCurrentValue(midIndex, spanValues, isFastAccess);
-            compareResult = searchValue.CompareTo(currentValue);
+            // Edge case: min value
+            T currentValue = sortedValues.GetCurrentValue(firstIndex, spanValues, isFastAccess);
             iterationCount++;
-        }
+            if (searchValue.CompareTo(currentValue) <= 0)
+            {
+                closestValue = currentValue;
+                return firstIndex;
+            }
 
-        var resultIndex = lastIndex;
-        closestValue = sortedValues.GetCurrentValue(resultIndex, spanValues, isFastAccess);
-        if (searchValue.CompareTo(closestValue) < 0)
+            // Edge case: max value
+            currentValue = sortedValues.GetCurrentValue(lastIndex, spanValues, isFastAccess);
+            iterationCount++;
+            if (searchValue.CompareTo(currentValue) >= 0)
+            {
+                closestValue = currentValue;
+                return lastIndex;
+            }
+
+            // Binary search
+            var midIndex = (firstIndex + lastIndex) / 2;
+            currentValue = sortedValues.GetCurrentValue(midIndex, spanValues, isFastAccess);
+            var compareResult = searchValue.CompareTo(currentValue);
+
+            while (valueCount > 2)
+            {
+                if (compareResult == 0)
+                {
+                    closestValue = currentValue;
+                    return lastIndex;
+                }
+
+                if (compareResult > 0)
+                    firstIndex = midIndex;
+
+                if (compareResult < 0)
+                    lastIndex = midIndex;
+
+                midIndex = (firstIndex + lastIndex) / 2;
+                valueCount = lastIndex - firstIndex + 1;
+                currentValue = sortedValues.GetCurrentValue(midIndex, spanValues, isFastAccess);
+                compareResult = searchValue.CompareTo(currentValue);
+                iterationCount++;
+            }
+
+            // Result selection
+            closestValue = sortedValues.GetCurrentValue(lastIndex, spanValues, isFastAccess);
+            iterationCount++;
+            if (searchValue.CompareTo(closestValue) < 0)
+            {
+                closestValue = sortedValues.GetCurrentValue(firstIndex, spanValues, isFastAccess);
+                return firstIndex;
+            }
+            else
+            {
+                return lastIndex;
+            }
+        }
+        finally
         {
-            resultIndex = firstIndex;
-            closestValue = sortedValues.GetCurrentValue(resultIndex, spanValues, isFastAccess);
+            Debug.WriteLine($"Fast Access: {isFastAccess}, Value Count: {sortedValues.Count}, Comparisons: {iterationCount}, Search: {searchValue}, Found: {closestValue}");
         }
-
-        iterationCount++;
-
-        Debug.WriteLine($"Fast Access: {isFastAccess}, Value Count: {sortedValues.Count}, Comparisons: {iterationCount}, Search: {searchValue}, Found: {closestValue}, Index {resultIndex}");
-        return resultIndex;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
