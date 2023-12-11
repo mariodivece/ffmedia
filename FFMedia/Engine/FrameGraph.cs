@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Reflection;
 
 namespace FFMedia.Engine;
 
@@ -163,11 +164,11 @@ public partial class FrameStore<TMedia>
         /// <inheritdoc />
         public TMedia? FindFrame(TimeExtent startTime)
         {
-            var keyIndex = Frames.Keys.IndexOfClosest(startTime, out var frameKey);
+            var keyIndex = Frames.Keys.IndexOfClosest(startTime, out _);
             if (keyIndex < 0)
                 return null;
 
-            return Frames[frameKey];
+            return Frames.GetValueAtIndex(keyIndex);
         }
 
         /// <inheritdoc />

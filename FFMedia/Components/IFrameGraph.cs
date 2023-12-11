@@ -119,9 +119,8 @@ public interface IFrameGraph<TMedia> :
     /// then the first frame is returned.
     /// If the time occurs after the <see cref="RangeEndTime"/>
     /// then the last frame is returned.
-    /// Lastly, it returns the first occurrence of a frame
-    /// that has its start time on or after the given time.
-    /// The search is perforrmed in ascending order.
+    /// If none of those edge cases match, then it returns the
+    /// first occurrence of a frame that has its start time on or after the given time.
     /// </summary>
     /// <param name="startTime">The time to search for.</param>
     /// <returns>The media frame if found.</returns>
