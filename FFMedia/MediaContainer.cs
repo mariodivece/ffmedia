@@ -9,7 +9,7 @@ namespace FFMedia;
 /// </summary>
 public partial class MediaContainer : IDisposable
 {
-    public MediaContainer(IServiceCollection services)
+    internal MediaContainer(IServiceCollection services)
     {
         var importedServices = services is not null && services.Count > 0
             ? [.. services]
@@ -24,7 +24,7 @@ public partial class MediaContainer : IDisposable
 
         var providerFactory = new DefaultServiceProviderFactory();
         ServiceProvider = providerFactory.CreateServiceProvider(localServices);
-
+        
         // TODO: also can be: Options = ServiceProvider.GetRequiredService<IMediaOptions>();
         Options = ActivatorUtilities.CreateInstance<IMediaOptions>(ServiceProvider) as MediaContainerOptions ??
             throw new InvalidCastException($"{nameof(IMediaOptions)} must be of type {nameof(MediaContainerOptions)}");

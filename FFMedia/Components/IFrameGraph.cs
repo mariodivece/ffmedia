@@ -1,9 +1,10 @@
 ﻿namespace FFMedia.Components;
 
 /// <summary>
-/// Represents a set of media frames in its locked, read-only state.
+/// Represents a collection of frames that can be read and written to
+/// in an exclusive time window.
 /// </summary>
-/// <typeparam name="TMedia"></typeparam>
+/// <typeparam name="TMedia">The media frame type.</typeparam>
 public interface IFrameGraph<TMedia> :
     IDisposable,
     ISerialGroupable,
@@ -82,7 +83,7 @@ public interface IFrameGraph<TMedia> :
     /// last or the first position depending on whether the newly added frame
     /// is added in the first or second half of the graph respectively.
     /// All added frames must specify a valid and finite start time
-    /// and diration.
+    /// and duration.
     /// </summary>
     /// <param name="item">The frame to add.</param>
     void Add(TMedia item);

@@ -30,16 +30,9 @@ public class MediaContainerBuilder
     /// <summary>
     /// An implementation for <see cref="ILoggingBuilder"/>.
     /// </summary>
-    private sealed class LoggingBuilder : ILoggingBuilder
+    private sealed class LoggingBuilder(IServiceCollection services) : ILoggingBuilder
     {
-        public static readonly object SyncRoot = new();
-
-        public LoggingBuilder(IServiceCollection services)
-        {
-            Services = services;
-        }
-
-        public IServiceCollection Services { get; }
+        public IServiceCollection Services { get; } = services;
     }
 
 }
